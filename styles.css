@@ -21,7 +21,16 @@ body{
 .nav a{margin-left:18px;text-decoration:none;color:#0a0a0a;font-weight:600}
 .nav .btn{padding:8px 14px;border:1px solid #111;border-radius:8px}
 
-.hero{position:relative;height:80vh;min-height:520px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hero{
+  position:relative;
+  height:calc(80vh + var(--header-h));  /* reclaim the visual height we “lose” to padding */
+  min-height:520px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  padding-top:var(--header-h);          /* pushes hero content down so it’s not under the header */
+}
 .hero-bg{position:absolute;inset:0;background:#111 url('hero.png') center/cover no-repeat;transform:scale(1.05)}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.55) 60%,rgba(0,0,0,0.7) 100%);opacity:1;transition:opacity .2s ease-out}
 .hero-content{position:relative;z-index:2;color:#fff;text-align:center;padding:0 12px}
