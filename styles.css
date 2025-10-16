@@ -8,7 +8,7 @@ html,body{margin:0;padding:0}
   --text-muted: #b8c0c8;
   --accent: #a8ff60;
   --header-h: 72px;         /* header height */
-  --hero-y: 30%;   /* vertical focus point of hero image. Try 20–45% */
+  --hero-y: 40%;   /* vertical focus point of hero image. Try 20–45% */
 }
 
 /* global */
