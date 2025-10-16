@@ -143,7 +143,7 @@ h2{font-size:32px;margin:0 0 18px;color:#fff}
   /* Use a mobile-cropped hero image (optional) */
   .hero-bg{
     background-image: url('hero-mobile.png'); /* add this image to the repo */
-    background-position: center 100%;          /* nudge framing for phones */
+    background-position: center 10%;          /* nudge framing for phones */
     background-size: cover;
     transform: none;                           /* remove subtle scale to keep sharp */
   }
