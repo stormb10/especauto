@@ -54,7 +54,7 @@ body.header-on .site-header{
 }
 .hero-bg{
   position:absolute; inset:0;
-  background:#111 url('hero.jpg') center/cover no-repeat;
+  background:#111 url('hero.png') center/cover no-repeat;
   transform:scale(1.05);
   will-change:transform;
 }
