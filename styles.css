@@ -1,5 +1,17 @@
 *{box-sizing:border-box}html,body{margin:0;padding:0}
-body{font-family:Inter,system-ui,Arial,sans-serif;color:#0a0a0a;background:#ffffff}
+:root{
+  --page-bg: #0f1214;        /* page background (change this to your complimentary color) */
+  --page-bg-alt: #151a1e;    /* slightly different shade for alternating sections */
+  --text: #e9ecef;           /* light text on dark bg */
+  --text-muted: #b8c0c8;
+}
+
+body{
+  font-family:Inter,system-ui,Arial,sans-serif;
+  color:var(--text);
+  background:var(--page-bg);
+}
+
 .container{max-width:1100px;margin:0 auto;padding:0 20px}
 .container.narrow{max-width:900px}
 
@@ -21,7 +33,7 @@ body{font-family:Inter,system-ui,Arial,sans-serif;color:#0a0a0a;background:#ffff
 .btn.ghost{border:1px solid #d0d0d0;color:#fff}
 
 .section{padding:80px 0}
-.section.alt{background:#f7f7f8}
+.section.alt{background:var(--page-bg-alt)}
 h2{font-size:32px;margin:0 0 18px}
 .about p{font-size:18px;color:#333}
 .bullets{margin:14px 0 0 0;padding:0 0 0 18px;color:#444}
@@ -35,7 +47,12 @@ h2{font-size:32px;margin:0 0 18px}
 .form textarea{resize:vertical}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
-.footer{padding:24px 0;border-top:1px solid #eee;background:#fafafa;color:#555}
+.footer{
+  padding:24px 0;
+  border-top:1px solid rgba(255,255,255,.06);
+  background:var(--page-bg-alt);
+  color:var(--text-muted);
+}
 .footer-inner{display:flex;align-items:center;justify-content:space-between}
 .tiny{font-size:12px;color:#7a7a7a}
 
@@ -47,3 +64,17 @@ h2{font-size:32px;margin:0 0 18px}
   .steps{grid-template-columns:1fr}
   .grid-2{grid-template-columns:1fr}
 }
+/* fade the bottom of the hero into the page background color */
+.hero::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:-1px;
+  height:160px;                         /* adjust the fade height if you want */
+  background:linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--page-bg) 100%);
+  z-index:1;                            /* sits above the bg/overlay, below the text */
+}
+
+/* keep stacking order sane */
+.hero-content{position:relative; z-index:2}
+.hero-overlay{z-index:0}                /* overlay is below the ::after gradient */
+
