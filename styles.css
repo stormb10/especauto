@@ -54,7 +54,7 @@ body{
   /* Start fully transparent at top; JS drives opacity as you scroll */
   background:#000;
   opacity:0;
-  transition:opacity .5s ease-out;
+  transition:opacity 2s ease-out;
 }
 
 /* Fade the bottom of the hero smoothly into page background */
@@ -71,7 +71,7 @@ body{
 .hero-sub, .cta{
   opacity:0;
   transform:translateY(14px);
-  transition:opacity .35s ease, transform .35s ease;
+  transition:opacity 1.5s ease, transform 1.5s ease;
 }
 .hero-sub{
   max-width:760px; margin:0 auto 12px; font-size:18px; color:#f0f0f0;
