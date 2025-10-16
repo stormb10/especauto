@@ -1,6 +1,6 @@
 *{box-sizing:border-box}html,body{margin:0;padding:0}
 :root{
-  --page-bg: #0f1214;        /* page background (change this to your complimentary color) */
+  --page-bg: #0e1916;        /* page background (change this to your complimentary color) */
   --page-bg-alt: #151a1e;    /* slightly different shade for alternating sections */
   --text: #e9ecef;           /* light text on dark bg */
   --text-muted: #b8c0c8;
