@@ -10,7 +10,7 @@ body{font-family:Inter,system-ui,Arial,sans-serif;color:#0a0a0a;background:#ffff
 .nav .btn{padding:8px 14px;border:1px solid #111;border-radius:8px}
 
 .hero{position:relative;height:80vh;min-height:520px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background:#111 url('hero.jpg') center/cover no-repeat;transform:scale(1.05)}
+.hero-bg{position:absolute;inset:0;background:#111 url('hero.png') center/cover no-repeat;transform:scale(1.05)}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.55) 60%,rgba(0,0,0,0.7) 100%);opacity:1;transition:opacity .2s ease-out}
 .hero-content{position:relative;z-index:2;color:#fff;text-align:center;padding:0 12px}
 .hero-content h1{font-size:48px;line-height:1.1;margin:0 0 10px}
