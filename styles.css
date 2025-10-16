@@ -53,8 +53,8 @@ body{
   position:absolute; inset:0;
   /* Start fully transparent at top; JS drives opacity as you scroll */
   background:#000;
-  opacity:var(--overlay-top);
-  transition:opacity .18s ease-out;
+  opacity:0;
+  transition:opacity .5s ease-out;
 }
 
 /* Fade the bottom of the hero smoothly into page background */
