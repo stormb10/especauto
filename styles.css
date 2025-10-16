@@ -8,6 +8,7 @@ html,body{margin:0;padding:0}
   --text-muted: #b8c0c8;
   --accent: #a8ff60;
   --header-h: 72px;         /* header height */
+  --hero-y: 30%;   /* vertical focus point of hero image. Try 20–45% */
 }
 
 /* global */
@@ -62,7 +63,7 @@ body.header-on .site-header{
 }
 .hero-bg{
   position:absolute; inset:0;
-  background:#111 url('hero.png') center/cover no-repeat;
+  background:#111 url('hero.png') center var(--hero-y)/cover no-repeat;
   transform:scale(1.05);
   will-change:transform;
 }
