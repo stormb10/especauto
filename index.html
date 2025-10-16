@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ESpec — European Car Sourcing & Export to the U.S.</title>
+  <meta name="description" content="ESpec sources, inspects, and exports European cars for U.S. buyers. Your eyes and ears in Europe." />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Sticky header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="brand">ESpec</div>
+      <nav class="nav">
+        <a href="#about">About</a>
+        <a href="#how">How it works</a>
+        <a href="#contact" class="btn">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero with static background and scroll fade -->
+  <section class="hero" id="hero">
+    <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
+    <div class="hero-overlay" id="heroOverlay"></div>
+    <div class="hero-content container">
+      <h1>Find your European-spec dream car.</h1>
+      <p>We source, inspect, and export European classics and performance cars to the United States — expertly, transparently, and on your schedule.</p>
+      <div class="cta">
+        <a class="btn primary" href="#contact">Start your brief</a>
+        <a class="btn ghost" href="#how">See how it works</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content sections -->
+  <main>
+    <section id="about" class="section about">
+      <div class="container narrow">
+        <h2>About ESpec</h2>
+        <p>
+          You want a <strong>European-spec</strong> car — the trim, the options, the tuning, the provenance that never made it stateside.
+          That’s where we come in. ESpec is your experienced partner on the ground in Europe: we hunt the right examples, verify condition,
+          negotiate the purchase, and coordinate everything from pickup to port. You stay in control with clear reports, photos, and
+          transparent landed-cost estimates.
+        </p>
+        <ul class="bullets">
+          <li>Trusted sourcing across dealers, private sellers, and auctions in EU/UK</li>
+          <li>Preliminary on-site inspections (photos, video, paint readings) + certified checks via TÜV/DEKRA partners</li>
+          <li>Purchase support, documents, deregistration, and export customs</li>
+          <li>Inland transport to port and handoff to your preferred shipper</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="how" class="section alt">
+      <div class="container">
+        <h2>How it works</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h3>Brief</h3>
+            <p>Tell us your budget, spec, preferred colors, and must-haves. We align on realistic targets and timeline.</p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3>Sourcing</h3>
+            <p>We scan Europe-wide marketplaces and networks; you get a curated shortlist with honest pros/cons and landed-cost estimates.</p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3>Inspection</h3>
+            <p>Preliminary on-site report with 80–100 photos and video; optional certified mechanical inspection available.</p>
+          </div>
+          <div class="step">
+            <div class="num">4</div>
+            <h3>Purchase & Export</h3>
+            <p>We assist with negotiation, paperwork, deregistration, and move the car to port for export and handoff.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="section contact">
+      <div class="container narrow">
+        <h2>Start your brief</h2>
+        <p>Tell us what you’re looking for and where you want it delivered in the U.S. We’ll reply within 24 hours.</p>
+        <form class="form" action="https://formspree.io/f/your-form-id" method="POST">
+          <div class="grid-2">
+            <input type="text" name="name" placeholder="Your name" required />
+            <input type="email" name="email" placeholder="Your email" required />
+          </div>
+          <input type="text" name="subject" placeholder="Desired model, budget, timeline" />
+          <textarea name="message" rows="6" placeholder="Tell us about the car, your priorities, and any questions." required></textarea>
+          <button class="btn primary" type="submit">Send</button>
+        </form>
+        <p class="tiny">By submitting, you agree to be contacted by ESpec. No spam — ever.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>© <span id="year"></span> ESpec. All rights reserved.</div>
+      <div class="tiny">Rotterdam, NL · info@especauto.com</div>
+    </div>
+  </footer>
+
+  <script src="/script.js"></script>
+</body>
+</html>
