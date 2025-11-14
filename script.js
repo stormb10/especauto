@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN GAME ===
+// === ESPEC IMPORT RUN – GTA-ISH TOP-DOWN VERSION ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -59,60 +59,70 @@
   const playBtn = document.getElementById("importRunPlay");
   const helpBtn = document.getElementById("importRunHelp");
 
-  // If the game section isn't on this page, don't run anything.
+  // Safety: if game elements don't exist, do nothing
   if (!canvas || !scoreEl || !messageEl || !playBtn || !helpBtn) return;
 
   const ctx = canvas.getContext("2d");
 
+  // --- ROAD GEOMETRY ---
   const laneCount = 3;
-  let laneWidth = canvas.width / laneCount;
+  const shoulderWidth = 30;                     // left/right shoulders (for billboards)
+  const roadWidth = canvas.width - shoulderWidth * 2;
+  let laneWidth = roadWidth / laneCount;        // width of each lane
 
+  // --- PLAYER CAR ---
   const player = {
-    lane: 1, // 0,1,2
-    width: 30,
-    height: 40,
-    y: canvas.height - 60,
+    lane: 1,               // 0,1,2
+    width: 26,
+    height: 48,
+    y: canvas.height - 80
   };
 
+  // --- GAME STATE ---
   let obstacles = [];
   let pickups = [];
   let billboards = [];
   let lastSpawn = 0;
   let lastBillboardSpawn = 0;
-  let spawnInterval = 900; // ms
-  let billboardInterval = 2500; // ms
-  let speed = 2;
+  let spawnInterval = 900;      // ms between obstacles/pickups
+  let billboardInterval = 2600; // ms between billboards
+  let speed = 2.3;
   let running = false;
   let lastTime = 0;
   let score = 0;
 
   const billboardTexts = [
-    "Avoid surprise costs",
-    "Legal imports only",
-    "ESpec has your back",
-    "25-year rule pro",
-    "From EU to US right",
+    "Avoid fees",
+    "Legal imports",
+    "ESpec helps",
+    "25-year rule",
+    "No surprises"
   ];
 
+  // Center X for a lane, given object width
+  function laneCenterX(laneIndex, objWidth) {
+    const laneStart = shoulderWidth + laneIndex * laneWidth;
+    return laneStart + (laneWidth - objWidth) / 2;
+  }
+
+  // --- CORE GAME FUNCTIONS ---
+
   function resetGame() {
-    console.log("ESpec Import Run: game started");
     obstacles = [];
     pickups = [];
     billboards = [];
     lastSpawn = 0;
     lastBillboardSpawn = 0;
-    speed = 2;
+    speed = 2.3;
     spawnInterval = 900;
     score = 0;
     player.lane = 1;
     running = true;
     lastTime = performance.now();
-    messageEl.textContent = "Avoid the red blocks, grab the green 25s!";
+    messageEl.textContent = "Avoid TAX / EPA / DOT / CBP, grab the green 25s!";
     updateScore(0);
     playBtn.textContent = "Play again";
     helpBtn.style.display = "none";
-
-    // Kick off the loop
     requestAnimationFrame(loop);
   }
 
@@ -129,39 +139,40 @@
   function spawnStuff() {
     const lane = Math.floor(Math.random() * laneCount);
     if (Math.random() < 0.7) {
+      // bad things
       obstacles.push({
         lane,
-        y: -40,
-        width: 30,
+        y: -50,
+        width: 26,
         height: 30,
-        type: randomObstacleType(),
+        type: randomObstacleType()
       });
     } else {
+      // good things
       pickups.push({
         lane,
         y: -30,
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20
       });
     }
   }
 
   function spawnBillboard() {
     const side = Math.random() < 0.5 ? "left" : "right";
-    const text =
-      billboardTexts[Math.floor(Math.random() * billboardTexts.length)];
-    const width = 70;
-    const height = 40;
-    const margin = 5;
-    const x = side === "left" ? margin : canvas.width - width - margin;
+    const text = billboardTexts[Math.floor(Math.random() * billboardTexts.length)];
+    const margin = 4;
+    const boardWidth = shoulderWidth - margin * 2;
+    const boardHeight = 36;
+    const x = side === "left" ? margin : canvas.width - shoulderWidth + margin;
 
     billboards.push({
       x,
-      y: -height,
-      width,
-      height,
+      y: -boardHeight - 20,
+      width: boardWidth,
+      height: boardHeight,
       text,
-      side,
+      side
     });
   }
 
@@ -180,10 +191,10 @@
     const dt = timestamp - lastTime;
     lastTime = timestamp;
 
-    // Difficulty ramp
+    // Gradually ramp difficulty
     updateScore(dt / 100);
     speed += dt * 0.00003;
-    spawnInterval = Math.max(450, spawnInterval - dt * 0.005);
+    spawnInterval = Math.max(430, spawnInterval - dt * 0.0045);
 
     // Spawn obstacles / pickups
     lastSpawn += dt;
@@ -199,31 +210,31 @@
       lastBillboardSpawn = 0;
     }
 
-    const playerX = player.lane * laneWidth + (laneWidth - player.width) / 2;
+    const playerX = laneCenterX(player.lane, player.width);
     const playerRect = {
       x: playerX,
       y: player.y,
       width: player.width,
-      height: player.height,
+      height: player.height
     };
 
-    // Move elements
+    // Move everything down
     for (let o of obstacles) o.y += speed;
     for (let p of pickups) p.y += speed;
-    for (let b of billboards) b.y += speed * 0.8;
+    for (let b of billboards) b.y += speed * 0.7;
 
-    // Remove off-screen
-    obstacles = obstacles.filter((o) => o.y < canvas.height + 50);
-    pickups = pickups.filter((p) => p.y < canvas.height + 50);
-    billboards = billboards.filter((b) => b.y < canvas.height + 60);
+    // Cull off-screen
+    obstacles = obstacles.filter(o => o.y < canvas.height + 60);
+    pickups = pickups.filter(p => p.y < canvas.height + 60);
+    billboards = billboards.filter(b => b.y < canvas.height + 80);
 
-    // Collisions with obstacles
+    // Collisions: obstacles
     for (let o of obstacles) {
       const oRect = {
-        x: o.lane * laneWidth + (laneWidth - o.width) / 2,
+        x: laneCenterX(o.lane, o.width),
         y: o.y,
         width: o.width,
-        height: o.height,
+        height: o.height
       };
       if (rectsCollide(playerRect, oRect)) {
         gameOver();
@@ -231,42 +242,57 @@
       }
     }
 
-    // Collisions with pickups
+    // Collisions: pickups
     for (let i = pickups.length - 1; i >= 0; i--) {
       const p = pickups[i];
       const pRect = {
-        x: p.lane * laneWidth + (laneWidth - p.width) / 2,
+        x: laneCenterX(p.lane, p.width),
         y: p.y,
         width: p.width,
-        height: p.height,
+        height: p.height
       };
       if (rectsCollide(playerRect, pRect)) {
-        updateScore(25); // 25-year rule bonus
+        updateScore(25);
         pickups.splice(i, 1);
       }
     }
 
-    // Draw everything
+    drawScene(playerRect);
+    requestAnimationFrame(loop);
+  }
+
+  // --- DRAWING ---
+
+  function drawScene(playerRect) {
     drawRoad();
     drawBillboards();
     drawPlayer(playerRect);
     drawObstacles();
     drawPickups();
-
-    requestAnimationFrame(loop);
   }
 
   function drawRoad() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#222";
+
+    // Background outside everything
+    ctx.fillStyle = "#0b0b0f";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Shoulders / sidewalks
+    ctx.fillStyle = "#181818";
+    ctx.fillRect(0, 0, shoulderWidth, canvas.height);
+    ctx.fillRect(canvas.width - shoulderWidth, 0, shoulderWidth, canvas.height);
+
+    // Main road
+    ctx.fillStyle = "#303036";
+    ctx.fillRect(shoulderWidth, 0, roadWidth, canvas.height);
+
     // Lane lines
-    ctx.strokeStyle = "#777";
+    ctx.strokeStyle = "#8a8a8f";
     ctx.lineWidth = 2;
     ctx.setLineDash([10, 10]);
     for (let i = 1; i < laneCount; i++) {
-      const x = i * laneWidth;
+      const x = shoulderWidth + i * laneWidth;
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, canvas.height);
@@ -276,36 +302,49 @@
   }
 
   function drawPlayer(r) {
-    // Green E9-ish 8-bit silhouette
+    // Dark outline/body
+    ctx.fillStyle = "#0c1e0f";
+    ctx.fillRect(r.x - 1, r.y, r.width + 2, r.height);
 
-    // Base body
-    ctx.fillStyle = "#33ff66";
-    ctx.fillRect(r.x, r.y + 8, r.width, r.height - 16);
+    // Main green body
+    ctx.fillStyle = "#26ff5f";
+    ctx.fillRect(r.x, r.y + 4, r.width, r.height - 8);
 
     // Roof / cabin
-    ctx.fillStyle = "#22aa44";
-    ctx.fillRect(r.x + 4, r.y + 12, r.width - 8, r.height - 24);
+    ctx.fillStyle = "#1cc94a";
+    ctx.fillRect(r.x + 3, r.y + 10, r.width - 6, r.height - 20);
 
-    // Windows stripe
-    ctx.fillStyle = "#99e0ff";
-    ctx.fillRect(r.x + 6, r.y + 16, r.width - 12, 6);
+    // Windows
+    ctx.fillStyle = "#9be5ff";
+    ctx.fillRect(r.x + 4, r.y + 12, r.width - 8, 8);                 // windshield
+    ctx.fillRect(r.x + 4, r.y + r.height - 20, r.width - 8, 7);      // rear window
 
-    // Front & rear bumpers
-    ctx.fillStyle = "#111";
-    ctx.fillRect(r.x + 2, r.y + 4, r.width - 4, 4);
-    ctx.fillRect(r.x + 2, r.y + r.height - 8, r.width - 4, 4);
+    // Hood / trunk shading
+    ctx.fillStyle = "#19b746";
+    ctx.fillRect(r.x + 3, r.y + 4, r.width - 6, 6);                  // hood
+    ctx.fillRect(r.x + 3, r.y + r.height - 10, r.width - 6, 6);      // trunk
+
+    // Headlights
+    ctx.fillStyle = "#fffbd1";
+    ctx.fillRect(r.x + 4, r.y + 2, 4, 3);
+    ctx.fillRect(r.x + r.width - 8, r.y + 2, 4, 3);
+
+    // Taillights
+    ctx.fillStyle = "#ff4545";
+    ctx.fillRect(r.x + 4, r.y + r.height - 3, 4, 2);
+    ctx.fillRect(r.x + r.width - 8, r.y + r.height - 3, 4, 2);
 
     // Wheels
     ctx.fillStyle = "#000";
-    ctx.fillRect(r.x + 3, r.y + 10, 6, 10);
-    ctx.fillRect(r.x + r.width - 9, r.y + 10, 6, 10);
-    ctx.fillRect(r.x + 3, r.y + r.height - 20, 6, 10);
-    ctx.fillRect(r.x + r.width - 9, r.y + r.height - 20, 6, 10);
+    ctx.fillRect(r.x - 3, r.y + 8, 5, 12);
+    ctx.fillRect(r.x - 3, r.y + r.height - 20, 5, 12);
+    ctx.fillRect(r.x + r.width - 2, r.y + 8, 5, 12);
+    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 20, 5, 12);
   }
 
   function drawObstacles() {
     for (let o of obstacles) {
-      const x = o.lane * laneWidth + (laneWidth - o.width) / 2;
+      const x = laneCenterX(o.lane, o.width);
       let color = "#ff3344";
       let label = "TAX";
 
@@ -328,40 +367,43 @@
 
       ctx.fillStyle = "#000";
       ctx.font = "10px monospace";
-      ctx.fillText(label, x + 3, o.y + 18);
+      ctx.fillText(label, x + 2, o.y + 18);
     }
   }
 
   function drawPickups() {
     for (let p of pickups) {
-      const x = p.lane * laneWidth + (laneWidth - p.width) / 2;
+      const x = laneCenterX(p.lane, p.width);
       ctx.fillStyle = "#33ff66";
       ctx.fillRect(x, p.y, p.width, p.height);
       ctx.fillStyle = "#000";
       ctx.font = "10px monospace";
-      ctx.fillText("25", x + 5, p.y + 17);
+      ctx.fillText("25", x + 3, p.y + 15);
     }
   }
 
   function drawBillboards() {
     ctx.font = "8px monospace";
     for (let b of billboards) {
-      // Pole
-      const poleX = b.side === "left" ? b.x + b.width - 5 : b.x + 5;
-      ctx.fillStyle = "#666";
-      ctx.fillRect(poleX, b.y + b.height, 3, 20);
+      const poleWidth = 3;
+      const poleX =
+        b.side === "left"
+          ? shoulderWidth - poleWidth          // attach at left road edge
+          : canvas.width - shoulderWidth;      // attach at right road edge
 
-      // Board
-      ctx.fillStyle = "#111";
+      // Pole
+      ctx.fillStyle = "#555";
+      ctx.fillRect(poleX, b.y + b.height, poleWidth, 24);
+
+      // Board on shoulder
+      ctx.fillStyle = "#101010";
       ctx.fillRect(b.x, b.y, b.width, b.height);
       ctx.strokeStyle = "#33ff66";
       ctx.lineWidth = 2;
       ctx.strokeRect(b.x, b.y, b.width, b.height);
 
       ctx.fillStyle = "#33ff66";
-      const textX = b.x + 4;
-      const textY = b.y + 14;
-      ctx.fillText(b.text, textX, textY);
+      ctx.fillText(b.text, b.x + 4, b.y + 14);
     }
   }
 
@@ -372,7 +414,8 @@
     helpBtn.style.display = "inline-block";
   }
 
-  // Controls: keyboard
+  // --- CONTROLS ---
+
   window.addEventListener("keydown", (e) => {
     if (!running) return;
     if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
@@ -382,7 +425,6 @@
     }
   });
 
-  // Controls: click / touch
   function handleTap(clientX) {
     if (!running) return;
     const rect = canvas.getBoundingClientRect();
@@ -394,9 +436,9 @@
     }
   }
 
+  // Click: move lanes while running, restart if stopped
   canvas.addEventListener("click", (e) => {
     if (!running) {
-      // after a crash, clicking anywhere on the game restarts
       resetGame();
     } else {
       handleTap(e.clientX);
@@ -407,18 +449,20 @@
     "touchstart",
     (e) => {
       const touch = e.touches[0];
-      handleTap(touch.clientX);
+      if (!running) {
+        resetGame();
+      } else {
+        handleTap(touch.clientX);
+      }
     },
     { passive: true }
   );
 
-  // Buttons
   playBtn.addEventListener("click", () => {
     resetGame();
   });
 
   helpBtn.addEventListener("click", () => {
-    // Smooth scroll to the brief form
     const contact = document.getElementById("contact");
     if (contact && contact.scrollIntoView) {
       contact.scrollIntoView({ behavior: "smooth" });
@@ -427,12 +471,12 @@
     }
   });
 
-  // Responsive sizing for the canvas (no overlay on UI)
+  // --- RESPONSIVE CANVAS SIZING (no transform overlay issues) ---
+
   function resizeCanvas() {
     const maxWidth = Math.min(window.innerWidth - 40, 360);
-    const width = Math.max(200, maxWidth); // never too tiny
+    const width = Math.max(220, maxWidth);
     const aspect = canvas.height / canvas.width;
-
     canvas.style.width = width + "px";
     canvas.style.height = width * aspect + "px";
   }
@@ -440,7 +484,7 @@
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
-  // Start a round immediately so it animates without needing the play button
+  // Start a round immediately
   resetGame();
 })();
 
