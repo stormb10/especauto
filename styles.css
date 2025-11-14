@@ -176,3 +176,59 @@ h2{font-size:32px;margin:0 0 18px;color:#fff}
   .hero-title{ font-size: 1.6rem; }
 }
 
+/* === ESPEC IMPORT RUN GAME SECTION === */
+
+.game-section {
+  text-align: center;
+}
+
+.game-intro {
+  max-width: 520px;
+  margin: 0 auto 18px;
+  color: var(--text-muted);
+  font-size: 0.98rem;
+}
+
+#gameContainer {
+  position: relative;
+  margin: 0 auto;
+}
+
+#importRunCanvas {
+  background: #333;
+  border: 3px solid #fff;
+  image-rendering: pixelated; /* 8-bit look when scaled */
+  touch-action: none;         /* prevent scroll on mobile taps */
+}
+
+#gameUI {
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+#importRunScore {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+#importRunMessage {
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+
+.game-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Slightly smaller buttons on phones so they sit nicely under the game */
+@media (max-width: 600px) {
+  .game-buttons .btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+
