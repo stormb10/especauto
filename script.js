@@ -395,7 +395,12 @@
   }
 
   canvas.addEventListener("click", (e) => {
-    handleTap(e.clientX);
+    if (!running) {
+      // after a crash, clicking anywhere on the game restarts
+      resetGame();
+    } else {
+      handleTap(e.clientX);
+    }
   });
 
   canvas.addEventListener(
@@ -422,12 +427,14 @@
     }
   });
 
-  // Responsive scaling for the canvas (keeps 8-bit look)
+  // Responsive sizing for the canvas (no overlay on UI)
   function resizeCanvas() {
     const maxWidth = Math.min(window.innerWidth - 40, 360);
-    const scale = maxWidth / canvas.width;
-    canvas.style.transformOrigin = "top center";
-    canvas.style.transform = "scale(" + scale + ")";
+    const width = Math.max(200, maxWidth); // never too tiny
+    const aspect = canvas.height / canvas.width;
+
+    canvas.style.width = width + "px";
+    canvas.style.height = width * aspect + "px";
   }
 
   window.addEventListener("resize", resizeCanvas);
