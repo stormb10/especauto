@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – GTA-ish v7 (art upgrade) ===
+// === ESPEC IMPORT RUN – sprite version ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -63,25 +63,40 @@
 
   const ctx = canvas.getContext("2d");
 
-  // --- ROAD GEOMETRY ---
+  // --- SPRITES --------------------------------------------------------
+
+  const carImg = new Image();
+  carImg.src = "assets/car.png";
+
+  const billboardImgs = [];
+  for (let i = 1; i <= 4; i++) {
+    const img = new Image();
+    img.src = "assets/billboard" + i + ".png";
+    billboardImgs.push(img);
+  }
+
+  // --- ROAD GEOMETRY --------------------------------------------------
+
   const laneCount = 3;
   const shoulderWidth = 30;
   const roadWidth = canvas.width - shoulderWidth * 2;
   const laneWidth = roadWidth / laneCount;
 
-  // --- PLAYER CAR (slightly larger for more pixels) ---
+  // --- PLAYER CAR -----------------------------------------------------
+
   const player = {
     x: 0, // set in resetGame()
     y: canvas.height - 92,
-    width: 30,
-    height: 60,
+    width: 32,
+    height: 64,
   };
 
   let leftPressed = false;
   let rightPressed = false;
   const steeringSpeed = 0.26; // px per ms
 
-  // --- GAME STATE ---
+  // --- GAME STATE -----------------------------------------------------
+
   let obstacles = [];
   let pickups = [];
   let billboards = [];
@@ -96,35 +111,7 @@
   let roadScroll = 0;
   let lastPlayerRect = null;
 
-  // Billboard "ad" styles (just colors/blocks – no readable text needed)
-  const billboardStyles = [
-    {
-      bg: "#202a4f",
-      bar1: "#ffce3b",
-      bar2: "#ff4b6b",
-      bar3: "#28c76f",
-    },
-    {
-      bg: "#5a1739",
-      bar1: "#ff8a00",
-      bar2: "#ffd93b",
-      bar3: "#ffffff",
-    },
-    {
-      bg: "#123b3f",
-      bar1: "#1e90ff",
-      bar2: "#28c76f",
-      bar3: "#ffce3b",
-    },
-    {
-      bg: "#3a1d4f",
-      bar1: "#ff4b6b",
-      bar2: "#ffce3b",
-      bar3: "#8be9fd",
-    },
-  ];
-
-  // --- HELPERS ---
+  // --- HELPERS --------------------------------------------------------
 
   function laneCenterX(laneIndex, objWidth) {
     const laneStart = shoulderWidth + laneIndex * laneWidth;
@@ -145,7 +132,7 @@
     return types[Math.floor(Math.random() * types.length)];
   }
 
-  // --- GAME FLOW ---
+  // --- GAME FLOW ------------------------------------------------------
 
   function resetGame() {
     obstacles = [];
@@ -199,20 +186,19 @@
       pickups.push({
         lane,
         y: -24,
-        width: 20,
-        height: 20,
+        width: 22,
+        height: 22,
       });
     }
   }
 
   function spawnBillboard() {
     const side = Math.random() < 0.5 ? "left" : "right";
-    const styleIndex = Math.floor(Math.random() * billboardStyles.length);
+    const imgIndex = Math.floor(Math.random() * billboardImgs.length);
 
-    // Bigger boards, allowed to hang offscreen for that “city canyon” feel
-    const boardWidth = 80;
-    const boardHeight = 48;
-    const overhang = 26;
+    const boardWidth = 90;
+    const boardHeight = 54;
+    const overhang = 28;
 
     const x =
       side === "left"
@@ -221,7 +207,7 @@
 
     billboards.push({
       side,
-      styleIndex,
+      imgIndex,
       x,
       y: -boardHeight - 60,
       width: boardWidth,
@@ -260,7 +246,7 @@
       if (player.x > maxX) player.x = maxX;
     }
 
-    // Difficulty / scroll
+    // Difficulty & scroll
     updateScore(dt / 100);
     speed += dt * 0.00003;
     spawnInterval = Math.max(430, spawnInterval - dt * 0.0045);
@@ -288,15 +274,9 @@
     lastPlayerRect = playerRect;
 
     // Move entities
-    obstacles.forEach((o) => {
-      o.y += speed;
-    });
-    pickups.forEach((p) => {
-      p.y += speed;
-    });
-    billboards.forEach((b) => {
-      b.y += speed * 0.7;
-    });
+    obstacles.forEach((o) => (o.y += speed));
+    pickups.forEach((p) => (p.y += speed));
+    billboards.forEach((b) => (b.y += speed * 0.7));
 
     // Cull
     obstacles = obstacles.filter((o) => o.y < canvas.height + 80);
@@ -337,7 +317,7 @@
     requestAnimationFrame(loop);
   }
 
-  // --- DRAWING ---
+  // --- DRAWING --------------------------------------------------------
 
   function drawScene(playerRect) {
     drawRoad();
@@ -446,87 +426,19 @@
     ctx.lineDashOffset = 0;
   }
 
-  // New detailed sports car sprite
   function drawPlayer(r) {
-    // Shadow
+    // Simple shadow
     ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(r.x - 4, r.y + 12, r.width + 8, r.height - 18);
+    ctx.fillRect(r.x - 4, r.y + 10, r.width + 8, r.height - 18);
 
-    // Outer outline
-    ctx.fillStyle = "#02060a";
-    ctx.fillRect(r.x - 1, r.y, r.width + 2, r.height);
-
-    // Lower darker body
-    ctx.fillStyle = "#073824";
-    ctx.fillRect(r.x, r.y + 10, r.width, r.height - 16);
-
-    // Main body spine (light green)
-    ctx.fillStyle = "#1cdc6e";
-    ctx.fillRect(r.x + 4, r.y + 12, r.width - 8, r.height - 22);
-
-    // Hood highlight
-    ctx.fillStyle = "#2af581";
-    ctx.fillRect(r.x + 6, r.y + 8, r.width - 12, 8);
-
-    // Rear deck highlight
-    ctx.fillRect(r.x + 6, r.y + r.height - 18, r.width - 12, 8);
-
-    // Roof / cabin darker block
-    ctx.fillStyle = "#094525";
-    ctx.fillRect(r.x + 6, r.y + 22, r.width - 12, r.height - 34);
-
-    // Glass: front, roof, rear
-    ctx.fillStyle = "#b5f1ff";
-    ctx.fillRect(r.x + 7, r.y + 24, r.width - 14, 6); // windshield
-    ctx.fillRect(
-      r.x + 7,
-      r.y + 32,
-      r.width - 14,
-      r.height - 48
-    ); // roof glass
-    ctx.fillRect(
-      r.x + 7,
-      r.y + r.height - 22,
-      r.width - 14,
-      6
-    ); // rear glass
-
-    // Side skirts / intakes
-    ctx.fillStyle = "#052417";
-    ctx.fillRect(r.x + 1, r.y + 28, 3, r.height - 36);
-    ctx.fillRect(r.x + r.width - 4, r.y + 28, 3, r.height - 36);
-
-    // Headlights
-    ctx.fillStyle = "#fffbd1";
-    ctx.fillRect(r.x + 4, r.y + 4, 4, 3);
-    ctx.fillRect(r.x + r.width - 8, r.y + 4, 4, 3);
-
-    // Taillights
-    ctx.fillStyle = "#ff4545";
-    ctx.fillRect(r.x + 4, r.y + r.height - 4, 4, 3);
-    ctx.fillRect(r.x + r.width - 8, r.y + r.height - 4, 4, 3);
-
-    // Wheels
-    ctx.fillStyle = "#000";
-    ctx.fillRect(r.x - 4, r.y + 16, 6, 14);
-    ctx.fillRect(r.x - 4, r.y + r.height - 30, 6, 14);
-    ctx.fillRect(r.x + r.width - 2, r.y + 16, 6, 14);
-    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 30, 6, 14);
-
-    ctx.fillStyle = "#444";
-    ctx.fillRect(r.x - 3, r.y + 18, 4, 5);
-    ctx.fillRect(r.x - 3, r.y + r.height - 26, 4, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + 18, 4, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + r.height - 26, 4, 5);
-
-    // Mirrors
-    ctx.fillStyle = "#0d6a39";
-    ctx.fillRect(r.x - 3, r.y + 26, 3, 4);
-    ctx.fillRect(r.x + r.width, r.y + 26, 3, 4);
-
-    // Little hood scoop to echo your reference
-    ctx.fillStyle = "#06351f";
-    ctx.fillRect(r.x + r.width / 2 - 4, r.y + 10, 8, 6);
+    if (carImg.complete && carImg.naturalWidth) {
+      ctx.imageSmoothingEnabled = false; // keep pixels crisp
+      ctx.drawImage(carImg, r.x, r.y, r.width, r.height);
+    } else {
+      // Fallback: simple green block if image not loaded yet
+      ctx.fillStyle = "#1cdc6e";
+      ctx.fillRect(r.x, r.y, r.width, r.height);
+    }
   }
 
   function drawObstacles() {
@@ -624,48 +536,32 @@
   function drawBillboards() {
     for (let i = 0; i < billboards.length; i++) {
       const b = billboards[i];
-      const style = billboardStyles[b.styleIndex % billboardStyles.length];
+      const img = billboardImgs[b.imgIndex];
 
-      // Support poles anchored near road edge
-      const roadEdge =
-        b.side === "left"
-          ? shoulderWidth
-          : shoulderWidth + roadWidth;
-
-      ctx.fillStyle = "#666";
-      const poleBaseX = b.side === "left" ? roadEdge + 4 : roadEdge - 8;
-      ctx.fillRect(poleBaseX, b.y + b.height, 4, 28);
-      ctx.fillRect(poleBaseX + (b.side === "left" ? 10 : -10), b.y + b.height, 4, 28);
-
-      // Big billboard panel
-      ctx.fillStyle = style.bg;
-      ctx.fillRect(b.x, b.y, b.width, b.height);
-      ctx.strokeStyle = "#111";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(b.x, b.y, b.width, b.height);
-
-      // Colored bars (fake ad)
-      ctx.fillStyle = style.bar1;
-      ctx.fillRect(b.x + 4, b.y + 6, b.width - 8, 8);
-      ctx.fillStyle = style.bar2;
-      ctx.fillRect(b.x + 6, b.y + 18, b.width - 12, 7);
-      ctx.fillStyle = style.bar3;
-      ctx.fillRect(b.x + 8, b.y + 29, b.width - 16, 6);
-
-      // Pixel “lights” along top
-      ctx.fillStyle = "#f8f8f8";
-      for (let lx = b.x + 6; lx < b.x + b.width - 4; lx += 12) {
-        ctx.fillRect(lx, b.y + 2, 3, 3);
+      // Draw the sprite if loaded
+      if (img && img.complete && img.naturalWidth) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, b.x, b.y, b.width, b.height);
+      } else {
+        // Fallback frame if not loaded yet
+        ctx.fillStyle = "#30353f";
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+        ctx.strokeStyle = "#111";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(b.x, b.y, b.width, b.height);
       }
 
-      // Tiny pixel icon block
-      ctx.fillStyle = "#000";
-      ctx.fillRect(b.x + 6, b.y + b.height - 10, 4, 4);
-      ctx.fillRect(b.x + 12, b.y + b.height - 10, 4, 4);
+      // Simple pole under billboard (so they feel anchored)
+      const poleX =
+        b.side === "left"
+          ? shoulderWidth + 8
+          : shoulderWidth + roadWidth - 12;
+      ctx.fillStyle = "#444";
+      ctx.fillRect(poleX, b.y + b.height, 4, 26);
     }
   }
 
-  // --- GAME OVER OVERLAY ---
+  // --- GAME OVER OVERLAY ----------------------------------------------
 
   function drawGameOverOverlay(finalScore) {
     ctx.fillStyle = "rgba(0,0,0,0.65)";
@@ -702,7 +598,7 @@
     ctx.textBaseline = "alphabetic";
   }
 
-  // --- CONTROLS ---
+  // --- CONTROLS -------------------------------------------------------
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
@@ -761,7 +657,7 @@
     }
   });
 
-  // --- RESPONSIVE CANVAS SIZING ---
+  // --- RESPONSIVE CANVAS SIZING ---------------------------------------
 
   function resizeCanvas() {
     const maxWidth = Math.min(window.innerWidth - 40, 360);
