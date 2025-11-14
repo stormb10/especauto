@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – sprite version (with lights + bounce + tighter hitbox) ===
+// === ESPEC IMPORT RUN – sprite version (lights + bounce + tight hitbox, v2) ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -87,22 +87,21 @@
   const player = {
     x: 0,
     y: 0,
-    width: 40,  // temporary; overwritten when car image loads
+    width: 40,
     height: 80,
   };
 
   let leftPressed = false;
   let rightPressed = false;
-  const steeringSpeed = 0.26; // px per ms
-  let bounceTime = 0;         // for subtle bounce
+  const steeringSpeed = 0.26;
+  let bounceTime = 0;
 
   carImg.onload = () => {
-    const targetHeight = canvas.height * 0.18; // ~18% of canvas height
+    const targetHeight = canvas.height * 0.18;
     const scale = targetHeight / carImg.naturalHeight;
 
     player.height = targetHeight;
     player.width = carImg.naturalWidth * scale;
-
     player.y = canvas.height - player.height - 24;
     player.x = laneCenterX(1, player.width);
   };
@@ -130,7 +129,6 @@
     return laneStart + (laneWidth - objWidth) / 2;
   }
 
-  // smaller hitbox inside the sprite (so the car feels tighter)
   function getPlayerHitbox(r) {
     const padX = r.width * 0.18;
     const padTop = r.height * 0.25;
@@ -261,7 +259,6 @@
     lastTime = timestamp;
     bounceTime += dt;
 
-    // Steering
     let steerDir = 0;
     if (leftPressed && !rightPressed) steerDir = -1;
     if (rightPressed && !leftPressed) steerDir = 1;
@@ -274,13 +271,11 @@
       if (player.x > maxX) player.x = maxX;
     }
 
-    // Difficulty & scroll
     updateScore(dt / 100);
     speed += dt * 0.00003;
     spawnInterval = Math.max(430, spawnInterval - dt * 0.0045);
     roadScroll = (roadScroll + speed * 0.9) % 160;
 
-    // Spawning
     lastSpawn += dt;
     if (lastSpawn >= spawnInterval) {
       spawnStuff();
@@ -302,17 +297,14 @@
     const playerHitbox = getPlayerHitbox(playerRect);
     lastPlayerRect = playerRect;
 
-    // Move entities
     obstacles.forEach((o) => (o.y += speed));
     pickups.forEach((p) => (p.y += speed));
     billboards.forEach((b) => (b.y += speed * 0.7));
 
-    // Cull
     obstacles = obstacles.filter((o) => o.y < canvas.height + 80);
     pickups = pickups.filter((p) => p.y < canvas.height + 80);
     billboards = billboards.filter((b) => b.y < canvas.height + 130);
 
-    // Collisions: obstacles (use smaller player hitbox)
     for (let i = 0; i < obstacles.length; i++) {
       const o = obstacles[i];
       const oRect = {
@@ -327,7 +319,6 @@
       }
     }
 
-    // Collisions: pickups
     for (let i = pickups.length - 1; i >= 0; i--) {
       const p = pickups[i];
       const pRect = {
@@ -352,8 +343,8 @@
     drawRoad();
     drawObstacles();
     drawPickups();
-    drawPlayer(playerRect);  // car with bounce
-    drawBillboards();        // on top
+    drawPlayer(playerRect);
+    drawBillboards();
   }
 
   function drawRoad() {
@@ -363,19 +354,45 @@
     ctx.fillStyle = "#050609";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Sidewalk / buildings
-    ctx.fillStyle = "#181818";
+    // Shoulders / verge (slightly greenish asphalt + guardrails)
+    ctx.fillStyle = "#171c16";
     ctx.fillRect(0, 0, shoulderWidth, canvas.height);
     ctx.fillRect(canvas.width - shoulderWidth, 0, shoulderWidth, canvas.height);
 
-    // Building texture stripes
-    for (let x = 2; x < shoulderWidth; x += 8) {
-      ctx.fillStyle = (x / 8) % 2 === 0 ? "#262626" : "#2d2d2d";
-      ctx.fillRect(x, 0, 5, canvas.height);
+    // Guardrail beams
+    ctx.fillStyle = "#444a4f";
+    ctx.fillRect(6, 10, shoulderWidth - 12, 6);
+    ctx.fillRect(6, canvas.height - 16, shoulderWidth - 12, 6);
+    ctx.fillRect(
+      canvas.width - shoulderWidth + 6,
+      10,
+      shoulderWidth - 12,
+      6
+    );
+    ctx.fillRect(
+      canvas.width - shoulderWidth + 6,
+      canvas.height - 16,
+      shoulderWidth - 12,
+      6
+    );
+
+    // Guardrail posts
+    ctx.fillStyle = "#2c3136";
+    for (let y = 0; y < canvas.height; y += 30) {
+      ctx.fillRect(10, y + 6, 4, 20);
+      ctx.fillRect(shoulderWidth - 14, y + 6, 4, 20);
+      ctx.fillRect(canvas.width - shoulderWidth + 10, y + 6, 4, 20);
+      ctx.fillRect(canvas.width - 14, y + 6, 4, 20);
     }
-    for (let x = canvas.width - shoulderWidth + 1; x < canvas.width - 2; x += 8) {
-      ctx.fillStyle = (x / 8) % 2 === 0 ? "#262626" : "#2d2d2d";
-      ctx.fillRect(x, 0, 5, canvas.height);
+
+    // Tiny roadside foliage blocks
+    for (let y = 10; y < canvas.height; y += 40) {
+      ctx.fillStyle = "#20291c";
+      ctx.fillRect(3, y, 8, 12);
+      ctx.fillRect(canvas.width - 11, y + 20, 8, 12);
+      ctx.fillStyle = "#27331f";
+      ctx.fillRect(4, y + 2, 6, 8);
+      ctx.fillRect(canvas.width - 10, y + 22, 6, 8);
     }
 
     // Road base gradient
@@ -439,69 +456,93 @@
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
 
-    // === Light poles + orangey beams with round patch ===
-    const lightSpacing = 180;
+    // === LIGHT POLES & BEAMS (cleaner, orangey, no huge discs) ===
+    const lightSpacing = 170;
     const offset = roadScroll % lightSpacing;
-    const leftPoleX = shoulderWidth - 10;
-    const rightPoleX = shoulderWidth + roadWidth + 6;
+    const leftPoleBaseX = shoulderWidth - 6;
+    const rightPoleBaseX = shoulderWidth + roadWidth + 2;
 
     for (let y = -lightSpacing + offset; y < canvas.height + lightSpacing; y += lightSpacing) {
       // Poles
-      ctx.fillStyle = "#555";
-      ctx.fillRect(leftPoleX, y, 3, 20);
-      ctx.fillRect(rightPoleX, y, 3, 20);
+      ctx.fillStyle = "#4a4f55";
+      ctx.fillRect(leftPoleBaseX, y - 26, 3, 26);
+      ctx.fillRect(rightPoleBaseX, y - 26, 3, 26);
 
-      // Beams (trapezoids)
-      ctx.fillStyle = "rgba(255, 210, 120, 0.25)";
+      // Arms
+      ctx.fillRect(leftPoleBaseX + 3, y - 26, 16, 3);
+      ctx.fillRect(rightPoleBaseX - 19, y - 26, 16, 3);
+
+      // Light heads
+      ctx.fillStyle = "#fbd27a";
+      ctx.fillRect(leftPoleBaseX + 18, y - 29, 5, 5);
+      ctx.fillRect(rightPoleBaseX - 23, y - 29, 5, 5);
+
+      // Conical beams
+      ctx.fillStyle = "rgba(255, 210, 120, 0.22)";
 
       ctx.beginPath();
-      ctx.moveTo(leftPoleX + 1, y + 20);
-      ctx.lineTo(leftPoleX + 18, y + 20);
-      ctx.lineTo(shoulderWidth + 30, y + 90);
-      ctx.lineTo(shoulderWidth + 8, y + 90);
+      ctx.moveTo(leftPoleBaseX + 20, y - 24);
+      ctx.lineTo(leftPoleBaseX + 40, y - 12);
+      ctx.lineTo(shoulderWidth + 40, y + 40);
+      ctx.lineTo(shoulderWidth + 15, y + 40);
       ctx.closePath();
       ctx.fill();
 
       ctx.beginPath();
-      ctx.moveTo(rightPoleX + 2, y + 20);
-      ctx.lineTo(rightPoleX - 16, y + 20);
-      ctx.lineTo(shoulderWidth + roadWidth - 8, y + 90);
-      ctx.lineTo(shoulderWidth + roadWidth - 30, y + 90);
+      ctx.moveTo(rightPoleBaseX - 20, y - 24);
+      ctx.lineTo(rightPoleBaseX - 40, y - 12);
+      ctx.lineTo(shoulderWidth + roadWidth - 15, y + 40);
+      ctx.lineTo(shoulderWidth + roadWidth - 40, y + 40);
       ctx.closePath();
       ctx.fill();
 
-      // Round spotlight patch on road
-      const spotY = y + 95;
-      const spotX = shoulderWidth + roadWidth / 2;
-      const r = 32;
-      const grad = ctx.createRadialGradient(
-        spotX,
-        spotY,
-        4,
-        spotX,
-        spotY,
-        r
-      );
-      grad.addColorStop(0, "rgba(255, 210, 120, 0.4)");
-      grad.addColorStop(0.55, "rgba(255, 210, 120, 0.12)");
-      grad.addColorStop(1, "rgba(0, 0, 0, 0.40)");
-      ctx.fillStyle = grad;
+      // Soft oval hotspot just inside the lane edge
+      const rX = 24;
+      const rY = 7;
+
+      ctx.save();
+      ctx.translate(shoulderWidth + 46, y + 42);
       ctx.beginPath();
-      ctx.arc(spotX, spotY, r, 0, Math.PI * 2);
+      ctx.scale(1, 1);
+      const gradL = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
+      gradL.addColorStop(0, "rgba(255, 215, 140, 0.5)");
+      gradL.addColorStop(0.6, "rgba(255, 215, 140, 0.18)");
+      gradL.addColorStop(1, "rgba(0,0,0,0.35)");
+      ctx.fillStyle = gradL;
+      ctx.ellipse(0, 0, rX, rY, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(shoulderWidth + roadWidth - 46, y + 42);
+      const gradR = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
+      gradR.addColorStop(0, "rgba(255, 215, 140, 0.5)");
+      gradR.addColorStop(0.6, "rgba(255, 215, 140, 0.18)");
+      gradR.addColorStop(1, "rgba(0,0,0,0.35)");
+      ctx.fillStyle = gradR;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rX, rY, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
   }
 
   function drawPlayer(r) {
-    // tiny bounce, visual only
     const bounce = Math.sin(bounceTime * 0.008) * 2.5;
     const displayY = r.y + bounce;
 
-    // tight little shadow
-    const shadowWidth = r.width * 0.7;
-    const shadowX = r.x + r.width * 0.15;
+    // soft oval shadow (no rectangle)
+    const shadowCx = r.x + r.width / 2;
+    const shadowCy = displayY + r.height - 6;
+    const shadowRx = r.width * 0.3;
+    const shadowRy = 4;
+
+    ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(shadowX, displayY + r.height - 10, shadowWidth, 5);
+    ctx.beginPath();
+    ctx.ellipse(shadowCx, shadowCy, shadowRx, shadowRy, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     if (carImg.complete && carImg.naturalWidth) {
       ctx.imageSmoothingEnabled = false;
@@ -521,16 +562,13 @@
         const cabHeight = 24;
         const trailerHeight = o.height - cabHeight;
 
-        // Trailer
         ctx.fillStyle = "#a0a4aa";
         ctx.fillRect(x, o.y, o.width, trailerHeight);
         ctx.fillStyle = "#7a7f86";
         ctx.fillRect(x + 3, o.y + 4, o.width - 6, trailerHeight - 8);
-
         ctx.fillStyle = "#5a5d64";
         ctx.fillRect(x + 4, o.y + trailerHeight - 8, o.width - 8, 4);
 
-        // Cab
         ctx.fillStyle = "#50545d";
         ctx.fillRect(x, o.y + trailerHeight, o.width, cabHeight);
         ctx.fillStyle = "#2d3138";
@@ -628,8 +666,6 @@
       ctx.fillRect(poleX, b.y + b.height, 4, 26);
     }
   }
-
-  // --- GAME OVER OVERLAY ----------------------------------------------
 
   function drawGameOverOverlay(finalScore) {
     ctx.fillStyle = "rgba(0,0,0,0.65)";
@@ -738,6 +774,5 @@
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
-  // Start first run
   resetGame();
 })();
