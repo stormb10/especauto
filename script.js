@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – GTA-ish v3 (stable) ===
+// === ESPEC IMPORT RUN – GTA-ish v4 ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -59,28 +59,27 @@
   const playBtn = document.getElementById("importRunPlay");
   const helpBtn = document.getElementById("importRunHelp");
 
-  // Safety: if game elements don't exist, do nothing
   if (!canvas || !scoreEl || !messageEl || !playBtn || !helpBtn) return;
 
   const ctx = canvas.getContext("2d");
 
   // --- ROAD GEOMETRY ---
   const laneCount = 3;
-  const shoulderWidth = 30; // left/right shoulders
+  const shoulderWidth = 30;
   const roadWidth = canvas.width - shoulderWidth * 2;
   const laneWidth = roadWidth / laneCount;
 
-  // --- PLAYER CAR (continuous X, steering by holding key) ---
+  // --- PLAYER CAR ---
   const player = {
     x: 0, // set in resetGame()
     y: canvas.height - 80,
     width: 26,
-    height: 48
+    height: 50
   };
 
   let leftPressed = false;
   let rightPressed = false;
-  const steeringSpeed = 0.26; // px per ms (~260px/s)
+  const steeringSpeed = 0.26; // px per ms
 
   // --- GAME STATE ---
   let obstacles = [];
@@ -94,12 +93,12 @@
   let running = false;
   let lastTime = 0;
   let score = 0;
-  let roadScroll = 0; // for crosswalks/road texture
+  let roadScroll = 0;
 
   const billboardTexts = [
     "Avoid fees",
     "Legal import",
-    "ESpec help",
+    "ESpec helps",
     "25-year rule",
     "No surprises"
   ];
@@ -121,10 +120,8 @@
   }
 
   function randomObstacleType() {
-    // include semi trucks as bigger hazards
     const types = ["tax", "epa", "dot", "cbp", "semi"];
-    const idx = Math.floor(Math.random() * types.length);
-    return types[idx];
+    return types[Math.floor(Math.random() * types.length)];
   }
 
   // --- GAME FLOW ---
@@ -140,8 +137,7 @@
     score = 0;
     roadScroll = 0;
 
-    // start the car in the middle lane
-    player.x = laneCenterX(1, player.width);
+    player.x = laneCenterX(1, player.width); // middle lane
 
     running = true;
     lastTime = performance.now();
@@ -163,7 +159,6 @@
     const type = randomObstacleType();
 
     if (Math.random() < 0.72) {
-      // obstacle
       let width = 24;
       let height = 28;
 
@@ -173,16 +168,15 @@
       }
 
       obstacles.push({
-        lane: lane,
-        type: type,
+        lane,
+        type,
         y: -height,
-        width: width,
-        height: height
+        width,
+        height
       });
     } else {
-      // pickup
       pickups.push({
-        lane: lane,
+        lane,
         y: -24,
         width: 20,
         height: 20
@@ -192,18 +186,17 @@
 
   function spawnBillboard() {
     const side = Math.random() < 0.5 ? "left" : "right";
-    const textIndex = Math.floor(Math.random() * billboardTexts.length);
-    const text = billboardTexts[textIndex];
+    const text = billboardTexts[Math.floor(Math.random() * billboardTexts.length)];
 
-    const margin = 4;
-    const boardWidth = shoulderWidth - margin * 2;
-    const boardHeight = 36;
+    const margin = 6;
+    const boardWidth = shoulderWidth - margin * 2;  // a bit narrower
+    const boardHeight = 34;
     const x = side === "left" ? margin : canvas.width - shoulderWidth + margin;
 
     billboards.push({
-      side: side,
-      text: text,
-      x: x,
+      side,
+      text,
+      x,
       y: -boardHeight - 20,
       width: boardWidth,
       height: boardHeight
@@ -223,7 +216,7 @@
     const dt = timestamp - lastTime;
     lastTime = timestamp;
 
-    // Steering (hold key)
+    // Steering
     let steerDir = 0;
     if (leftPressed && !rightPressed) steerDir = -1;
     if (rightPressed && !leftPressed) steerDir = 1;
@@ -236,7 +229,7 @@
       if (player.x > maxX) player.x = maxX;
     }
 
-    // Difficulty + road scroll
+    // Difficulty / scroll
     updateScore(dt / 100);
     speed += dt * 0.00003;
     spawnInterval = Math.max(430, spawnInterval - dt * 0.0045);
@@ -267,7 +260,7 @@
     pickups.forEach(p => { p.y += speed; });
     billboards.forEach(b => { b.y += speed * 0.7; });
 
-    // Cull off-screen
+    // Cull
     obstacles = obstacles.filter(o => o.y < canvas.height + 80);
     pickups = pickups.filter(p => p.y < canvas.height + 80);
     billboards = billboards.filter(b => b.y < canvas.height + 100);
@@ -323,12 +316,12 @@
     ctx.fillStyle = "#050609";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Sidewalk / building strips
+    // Sidewalk / buildings
     ctx.fillStyle = "#181818";
     ctx.fillRect(0, 0, shoulderWidth, canvas.height);
     ctx.fillRect(canvas.width - shoulderWidth, 0, shoulderWidth, canvas.height);
 
-    // Simple building texture
+    // Building texture
     for (let x = 2; x < shoulderWidth; x += 8) {
       ctx.fillStyle = (x / 8) % 2 === 0 ? "#242424" : "#2a2a2a";
       ctx.fillRect(x, 0, 5, canvas.height);
@@ -342,16 +335,37 @@
     ctx.fillStyle = "#343845";
     ctx.fillRect(shoulderWidth, 0, roadWidth, canvas.height);
 
+    // Outer solid shoulder lines + rumble-ish segments
+    ctx.strokeStyle = "#cfd4dd";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(shoulderWidth + 2, 0);
+    ctx.lineTo(shoulderWidth + 2, canvas.height);
+    ctx.moveTo(shoulderWidth + roadWidth - 2, 0);
+    ctx.lineTo(shoulderWidth + roadWidth - 2, canvas.height);
+    ctx.stroke();
+
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+    ctx.beginPath();
+    ctx.moveTo(shoulderWidth + 6, 0);
+    ctx.lineTo(shoulderWidth + 6, canvas.height);
+    ctx.moveTo(shoulderWidth + roadWidth - 6, 0);
+    ctx.lineTo(shoulderWidth + roadWidth - 6, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
     // Road bands
     ctx.fillStyle = "rgba(255,255,255,0.02)";
     for (let y = -roadScroll; y < canvas.height; y += 26) {
       ctx.fillRect(shoulderWidth, y, roadWidth, 2);
     }
 
-    // Crosswalks
+    // Crosswalks (use scroll so they move in same direction as bands)
     ctx.fillStyle = "rgba(240,240,240,0.55)";
     const spacing = 160;
-    for (let y = -roadScroll; y < canvas.height + spacing; y += spacing) {
+    const scrollOffset = roadScroll % spacing;
+    for (let y = -scrollOffset; y < canvas.height + spacing; y += spacing) {
       for (let x = shoulderWidth + 10; x < shoulderWidth + roadWidth - 30; x += 26) {
         ctx.fillRect(x, y + 4, 18, 4);
         ctx.fillRect(x, y + 12, 18, 4);
@@ -378,39 +392,36 @@
     ctx.fillRect(r.x - 3, r.y + 8, r.width + 6, r.height - 14);
 
     // Outline
-    ctx.fillStyle = "#02110b";
+    ctx.fillStyle = "#020b10";
     ctx.fillRect(r.x - 1, r.y, r.width + 2, r.height);
 
-    // Sporty coupe body
-    ctx.fillStyle = "#19e76b"; // bright green
+    // Main body (sports coupe)
+    ctx.fillStyle = "#1cdc6e";
     ctx.fillRect(r.x, r.y + 6, r.width, r.height - 12);
 
-    // Side skirts
-    ctx.fillStyle = "#10b753";
-    ctx.fillRect(r.x, r.y + r.height - 18, r.width, 12);
-
-    // Cabin
+    // Slight taper front/rear using darker "bumpers"
     ctx.fillStyle = "#0f8e3b";
-    ctx.fillRect(r.x + 4, r.y + 13, r.width - 8, r.height - 26);
+    ctx.fillRect(r.x + 2, r.y + 4, r.width - 4, 5);                    // front bumper
+    ctx.fillRect(r.x + 2, r.y + r.height - 9, r.width - 4, 5);         // rear bumper
+
+    // Roof / cabin
+    ctx.fillStyle = "#0c6d31";
+    ctx.fillRect(r.x + 3, r.y + 13, r.width - 6, r.height - 26);
 
     // Glass
-    ctx.fillStyle = "#9be5ff";
-    ctx.fillRect(r.x + 5, r.y + 15, r.width - 10, 7);               // windshield
-    ctx.fillRect(r.x + 5, r.y + r.height - 26, r.width - 10, 7);    // rear window
+    ctx.fillStyle = "#b0ecff";
+    ctx.fillRect(r.x + 4, r.y + 15, r.width - 8, 7);                    // windshield
+    ctx.fillRect(r.x + 4, r.y + r.height - 24, r.width - 8, 7);         // rear glass
+    ctx.fillRect(r.x + 4, r.y + 23, r.width - 8, r.height - 34);        // roof glass band
 
-    // Hood & trunk
-    ctx.fillStyle = "#16d75b";
-    ctx.fillRect(r.x + 4, r.y + 7, r.width - 8, 6);
-    ctx.fillRect(r.x + 4, r.y + r.height - 13, r.width - 8, 6);
-
-    // Racing stripe
-    ctx.fillStyle = "#f0fff5";
+    // Center racing stripe
+    ctx.fillStyle = "#f7fff8";
     ctx.fillRect(r.x + r.width / 2 - 2, r.y + 7, 4, r.height - 14);
 
     // Headlights
     ctx.fillStyle = "#fffbd1";
-    ctx.fillRect(r.x + 4, r.y + 3, 4, 3);
-    ctx.fillRect(r.x + r.width - 8, r.y + 3, 4, 3);
+    ctx.fillRect(r.x + 4, r.y + 2, 4, 3);
+    ctx.fillRect(r.x + r.width - 8, r.y + 2, 4, 3);
 
     // Taillights
     ctx.fillStyle = "#ff4545";
@@ -429,6 +440,11 @@
     ctx.fillRect(r.x - 2, r.y + r.height - 21, 3, 5);
     ctx.fillRect(r.x + r.width - 1, r.y + 13, 3, 5);
     ctx.fillRect(r.x + r.width - 1, r.y + r.height - 21, 3, 5);
+
+    // Mirrors
+    ctx.fillStyle = "#0f8e3b";
+    ctx.fillRect(r.x - 3, r.y + 18, 3, 4);
+    ctx.fillRect(r.x + r.width, r.y + 18, 3, 4);
   }
 
   function drawObstacles() {
@@ -437,44 +453,39 @@
       const x = laneCenterX(o.lane, o.width);
 
       if (o.type === "semi") {
-        // Semi truck (cab + trailer)
+        // Semi truck
         const cabHeight = 22;
         const trailerHeight = o.height - cabHeight;
 
         // Trailer
-        ctx.fillStyle = "#999c9f";
+        ctx.fillStyle = "#a0a4aa";
         ctx.fillRect(x, o.y, o.width, trailerHeight);
-        ctx.fillStyle = "#777a7f";
+        ctx.fillStyle = "#7a7f86";
         ctx.fillRect(x + 3, o.y + 4, o.width - 6, trailerHeight - 8);
 
-        // Rear doors detail
-        ctx.fillStyle = "#555";
+        ctx.fillStyle = "#5a5d64";
         ctx.fillRect(x + 4, o.y + trailerHeight - 8, o.width - 8, 4);
 
         // Cab
-        ctx.fillStyle = "#44474d";
+        ctx.fillStyle = "#50545d";
         ctx.fillRect(x, o.y + trailerHeight, o.width, cabHeight);
-        ctx.fillStyle = "#2c2f35";
+        ctx.fillStyle = "#2d3138";
         ctx.fillRect(x + 2, o.y + trailerHeight + 4, o.width - 4, cabHeight - 8);
 
-        // Windshield
         ctx.fillStyle = "#9be5ff";
         ctx.fillRect(x + 4, o.y + trailerHeight + 4, o.width - 8, 5);
 
-        // Headlights
         ctx.fillStyle = "#fffbd1";
         ctx.fillRect(x + 4, o.y + o.height - 3, 4, 2);
         ctx.fillRect(x + o.width - 8, o.y + o.height - 3, 4, 2);
       } else {
-        // Symbol-style hazard signs
+        // Symbol hazards
         const centerX = x + o.width / 2;
         const centerY = o.y + o.height / 2;
         const radius = Math.min(o.width, o.height) / 2;
 
-        // Pick color/label
         let color = "#ff3344";
         let label = "TAX";
-
         if (o.type === "epa") {
           color = "#ff8800";
           label = "EPA";
@@ -486,7 +497,6 @@
           label = "CBP";
         }
 
-        // Diamond background
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(Math.PI / 4);
@@ -494,7 +504,6 @@
         ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
         ctx.restore();
 
-        // Label
         ctx.fillStyle = "#000";
         ctx.font = "9px monospace";
         const textWidth = ctx.measureText(label).width;
@@ -511,7 +520,6 @@
       const cy = p.y + p.height / 2;
       const r = p.width / 2;
 
-      // Coin-style pickup
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fillStyle = "#2bff7b";
@@ -532,37 +540,38 @@
     for (let i = 0; i < billboards.length; i++) {
       const b = billboards[i];
 
-      // Poles attach to the road edge
-      const roadEdge =
-        b.side === "left"
-          ? shoulderWidth
-          : shoulderWidth + roadWidth;
+      // Road edge where poles attach
+      const roadEdge = b.side === "left"
+        ? shoulderWidth
+        : shoulderWidth + roadWidth;
 
-      ctx.fillStyle = "#555";
-      // two poles
-      ctx.fillRect(roadEdge - (b.side === "left" ? 4 : -1), b.y + b.height, 3, 24);
-      ctx.fillRect(roadEdge - (b.side === "left" ? 12 : -9), b.y + b.height, 3, 24);
+      // Poles (a bit inset so boards aren't hugging the frame)
+      ctx.fillStyle = "#777";
+      const pole1X = roadEdge + (b.side === "left" ? -6 : -3);
+      const pole2X = roadEdge + (b.side === "left" ? -14 : -11);
+      ctx.fillRect(pole1X, b.y + b.height, 3, 24);
+      ctx.fillRect(pole2X, b.y + b.height, 3, 24);
 
-      // Board
-      ctx.fillStyle = "#101010";
+      // Board: white for classic billboard look
+      ctx.fillStyle = "#ffffff";
       ctx.fillRect(b.x, b.y, b.width, b.height);
-      ctx.strokeStyle = "#33ff66";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 1.5;
       ctx.strokeRect(b.x, b.y, b.width, b.height);
 
-      // Top header bar
-      ctx.fillStyle = "#0b3519";
-      ctx.fillRect(b.x, b.y, b.width, 7);
+      // Top bar
+      ctx.fillStyle = "#111";
+      ctx.fillRect(b.x, b.y, b.width, 6);
 
-      // Little "lights"
-      ctx.fillStyle = "#e8ffe8";
-      ctx.fillRect(b.x + 4, b.y + 2, 3, 3);
-      ctx.fillRect(b.x + b.width - 7, b.y + 2, 3, 3);
+      // Tiny lights
+      ctx.fillStyle = "#f5f5f5";
+      ctx.fillRect(b.x + 4, b.y + 1, 3, 3);
+      ctx.fillRect(b.x + b.width - 7, b.y + 1, 3, 3);
 
-      // Text
+      // Text (dark green)
       let text = b.text;
       let fontSize = 8;
-      ctx.fillStyle = "#33ff66";
+      ctx.fillStyle = "#126c37";
       ctx.font = fontSize + "px monospace";
       let w = ctx.measureText(text).width;
 
@@ -573,7 +582,7 @@
       }
 
       const textX = b.x + (b.width - w) / 2;
-      const textY = b.y + b.height / 2 + fontSize / 2 - 2;
+      const textY = b.y + b.height / 2 + fontSize / 2 - 1;
       ctx.fillText(text, textX, textY);
     }
   }
@@ -597,17 +606,13 @@
   });
 
   function handleTapImpulse(clientX) {
-    // discrete nudge for mobile taps
     const rect = canvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const mid = rect.width / 2;
     const nudge = laneWidth * 0.7;
 
-    if (x < mid) {
-      player.x -= nudge;
-    } else {
-      player.x += nudge;
-    }
+    if (x < mid) player.x -= nudge;
+    else player.x += nudge;
 
     const minX = shoulderWidth + 4;
     const maxX = shoulderWidth + roadWidth - player.width - 4;
@@ -616,29 +621,21 @@
   }
 
   canvas.addEventListener("click", (e) => {
-    if (!running) {
-      resetGame();
-    } else {
-      handleTapImpulse(e.clientX);
-    }
+    if (!running) resetGame();
+    else handleTapImpulse(e.clientX);
   });
 
   canvas.addEventListener(
     "touchstart",
     (e) => {
       const touch = e.touches[0];
-      if (!running) {
-        resetGame();
-      } else {
-        handleTapImpulse(touch.clientX);
-      }
+      if (!running) resetGame();
+      else handleTapImpulse(touch.clientX);
     },
     { passive: true }
   );
 
-  playBtn.addEventListener("click", () => {
-    resetGame();
-  });
+  playBtn.addEventListener("click", resetGame);
 
   helpBtn.addEventListener("click", () => {
     const contact = document.getElementById("contact");
@@ -662,8 +659,6 @@
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
-  // Start a round immediately
+  // Start first run
   resetGame();
 })();
-
-
