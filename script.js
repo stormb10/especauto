@@ -95,6 +95,7 @@
   ];
 
   function resetGame() {
+    console.log("ESpec Import Run: game started");
     obstacles = [];
     pickups = [];
     billboards = [];
@@ -110,6 +111,8 @@
     updateScore(0);
     playBtn.textContent = "Play again";
     helpBtn.style.display = "none";
+
+    // Kick off the loop
     requestAnimationFrame(loop);
   }
 
@@ -145,7 +148,8 @@
 
   function spawnBillboard() {
     const side = Math.random() < 0.5 ? "left" : "right";
-    const text = billboardTexts[Math.floor(Math.random() * billboardTexts.length)];
+    const text =
+      billboardTexts[Math.floor(Math.random() * billboardTexts.length)];
     const width = 70;
     const height = 40;
     const margin = 5;
@@ -428,5 +432,15 @@
 
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
+
+  // Draw a static scene before the first play so it doesn't look "blank"
+  drawRoad();
+  const initialPlayerRect = {
+    x: player.lane * laneWidth + (laneWidth - player.width) / 2,
+    y: player.y,
+    width: player.width,
+    height: player.height,
+  };
+  drawPlayer(initialPlayerRect);
 })();
 
