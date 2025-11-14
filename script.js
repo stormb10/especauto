@@ -433,14 +433,8 @@
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
-  // Draw a static scene before the first play so it doesn't look "blank"
-  drawRoad();
-  const initialPlayerRect = {
-    x: player.lane * laneWidth + (laneWidth - player.width) / 2,
-    y: player.y,
-    width: player.width,
-    height: player.height,
-  };
-  drawPlayer(initialPlayerRect);
+  // Start a round immediately so it animates without needing the play button
+  resetGame();
 })();
+
 
