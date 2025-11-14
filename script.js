@@ -85,15 +85,27 @@
   // --- PLAYER CAR -----------------------------------------------------
 
   const player = {
-    x: 0, // set in resetGame()
-    y: canvas.height - 92,
-    width: 32,
-    height: 64,
+    x: 0,
+    y: 0,
+    width: 40,  // temporary, will be overwritten once carImg loads
+    height: 80,
   };
 
   let leftPressed = false;
   let rightPressed = false;
   const steeringSpeed = 0.26; // px per ms
+
+  // when the car image loads, compute real size & position with correct aspect
+  carImg.onload = () => {
+    const targetHeight = canvas.height * 0.18; // ~18% of canvas height
+    const scale = targetHeight / carImg.naturalHeight;
+
+    player.height = targetHeight;
+    player.width = carImg.naturalWidth * scale;
+
+    player.y = canvas.height - player.height - 24;
+    player.x = laneCenterX(1, player.width);
+  };
 
   // --- GAME STATE -----------------------------------------------------
 
@@ -145,7 +157,9 @@
     score = 0;
     roadScroll = 0;
 
+    // position player using current sprite size (works after onload too)
     player.x = laneCenterX(1, player.width);
+    player.y = canvas.height - player.height - 24;
 
     running = true;
     lastTime = performance.now();
@@ -321,10 +335,10 @@
 
   function drawScene(playerRect) {
     drawRoad();
-    drawBillboards();
-    drawPlayer(playerRect);
     drawObstacles();
     drawPickups();
+    drawPlayer(playerRect);
+    drawBillboards(); // draw LAST so car appears "under" billboards
   }
 
   function drawRoad() {
@@ -538,12 +552,11 @@
       const b = billboards[i];
       const img = billboardImgs[b.imgIndex];
 
-      // Draw the sprite if loaded
+      // billboard sprite
       if (img && img.complete && img.naturalWidth) {
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(img, b.x, b.y, b.width, b.height);
       } else {
-        // Fallback frame if not loaded yet
         ctx.fillStyle = "#30353f";
         ctx.fillRect(b.x, b.y, b.width, b.height);
         ctx.strokeStyle = "#111";
@@ -551,7 +564,7 @@
         ctx.strokeRect(b.x, b.y, b.width, b.height);
       }
 
-      // Simple pole under billboard (so they feel anchored)
+      // pole under billboard so it feels anchored
       const poleX =
         b.side === "left"
           ? shoulderWidth + 8
