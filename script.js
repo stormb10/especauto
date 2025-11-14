@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – GTA-ish v5 ===
+// === ESPEC IMPORT RUN – GTA-ish v6 ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -72,14 +72,14 @@
   // --- PLAYER CAR ---
   const player = {
     x: 0, // set in resetGame()
-    y: canvas.height - 80,
-    width: 26,
-    height: 50
+    y: canvas.height - 82,
+    width: 28,
+    height: 52
   };
 
   let leftPressed = false;
   let rightPressed = false;
-  const steeringSpeed = 0.26; // px per ms
+  const steeringSpeed = 0.26;
 
   // --- GAME STATE ---
   let obstacles = [];
@@ -94,14 +94,14 @@
   let lastTime = 0;
   let score = 0;
   let roadScroll = 0;
-  let lastPlayerRect = null; // for drawing on game over
+  let lastPlayerRect = null;
 
   const billboardTexts = [
-    "Avoid fees",
-    "Legal import",
-    "ESpec helps",
-    "25-year rule",
-    "No surprises"
+    "ES",
+    "$$",
+    "FEES",
+    "LEGAL",
+    "25YR"
   ];
 
   // --- HELPERS ---
@@ -138,7 +138,7 @@
     score = 0;
     roadScroll = 0;
 
-    player.x = laneCenterX(1, player.width); // middle lane
+    player.x = laneCenterX(1, player.width);
 
     running = true;
     lastTime = performance.now();
@@ -169,15 +169,15 @@
       }
 
       obstacles.push({
-        lane,
-        type,
+        lane: lane,
+        type: type,
         y: -height,
-        width,
-        height
+        width: width,
+        height: height
       });
     } else {
       pickups.push({
-        lane,
+        lane: lane,
         y: -24,
         width: 20,
         height: 20
@@ -189,16 +189,21 @@
     const side = Math.random() < 0.5 ? "left" : "right";
     const text = billboardTexts[Math.floor(Math.random() * billboardTexts.length)];
 
-    const margin = 6;
-    const boardWidth = shoulderWidth - margin * 2;
-    const boardHeight = 34;
-    const x = side === "left" ? margin : canvas.width - shoulderWidth + margin;
+    // Bigger boards, allowed to hang offscreen
+    const boardWidth = 60;
+    const boardHeight = 40;
+    const overhang = 20;
+
+    const x =
+      side === "left"
+        ? -overhang
+        : canvas.width - boardWidth + overhang - 10; // a bit inside
 
     billboards.push({
-      side,
-      text,
-      x,
-      y: -boardHeight - 20,
+      side: side,
+      text: text,
+      x: x,
+      y: -boardHeight - 40,
       width: boardWidth,
       height: boardHeight
     });
@@ -210,7 +215,6 @@
     messageEl.textContent = "Seized at customs! Score: " + finalScore;
     helpBtn.style.display = "inline-block";
 
-    // Draw final frame with overlay
     if (lastPlayerRect) {
       drawScene(lastPlayerRect);
     }
@@ -271,7 +275,7 @@
     // Cull
     obstacles = obstacles.filter(o => o.y < canvas.height + 80);
     pickups = pickups.filter(p => p.y < canvas.height + 80);
-    billboards = billboards.filter(b => b.y < canvas.height + 100);
+    billboards = billboards.filter(b => b.y < canvas.height + 120);
 
     // Collisions: obstacles
     for (let i = 0; i < obstacles.length; i++) {
@@ -329,7 +333,7 @@
     ctx.fillRect(0, 0, shoulderWidth, canvas.height);
     ctx.fillRect(canvas.width - shoulderWidth, 0, shoulderWidth, canvas.height);
 
-    // Building texture
+    // Building texture stripes
     for (let x = 2; x < shoulderWidth; x += 8) {
       ctx.fillStyle = (x / 8) % 2 === 0 ? "#262626" : "#2d2d2d";
       ctx.fillRect(x, 0, 5, canvas.height);
@@ -339,18 +343,24 @@
       ctx.fillRect(x, 0, 5, canvas.height);
     }
 
-    // Road base (slight gradient)
+    // Road base gradient
     const roadGradient = ctx.createLinearGradient(
       shoulderWidth, 0, shoulderWidth, canvas.height
     );
-    roadGradient.addColorStop(0, "#383c49");
-    roadGradient.addColorStop(0.5, "#343845");
-    roadGradient.addColorStop(1, "#303440");
+    roadGradient.addColorStop(0, "#3c4250");
+    roadGradient.addColorStop(0.5, "#363b48");
+    roadGradient.addColorStop(1, "#313643");
     ctx.fillStyle = roadGradient;
     ctx.fillRect(shoulderWidth, 0, roadWidth, canvas.height);
 
+    // Vertical wear strips
+    for (let x = shoulderWidth + 5; x < shoulderWidth + roadWidth; x += 16) {
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
+      ctx.fillRect(x, 0, 6, canvas.height);
+    }
+
     // Outer solid lines
-    ctx.strokeStyle = "#cfd4dd";
+    ctx.strokeStyle = "#d7dde6";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(shoulderWidth + 2, 0);
@@ -376,21 +386,22 @@
       ctx.fillRect(shoulderWidth, y, roadWidth, 2);
     }
 
-    // Crosswalks – move the *same* direction as bands
+    // Crosswalks moving with road
     ctx.fillStyle = "rgba(240,240,240,0.55)";
     const spacing = 160;
     for (let base = -spacing; base < canvas.height + spacing; base += spacing) {
-      const y = base + roadScroll; // increases with scroll => moves down
-      for (let x = shoulderWidth + 10; x < shoulderWidth + roadWidth - 30; x += 26) {
+      const y = base + roadScroll;
+      for (let x = shoulderWidth + 12; x < shoulderWidth + roadWidth - 30; x += 26) {
         ctx.fillRect(x, y + 4, 18, 4);
         ctx.fillRect(x, y + 12, 18, 4);
       }
     }
 
-    // Lane lines
-    ctx.strokeStyle = "#8a8a8f";
+    // Lane lines (now scrolling)
+    ctx.strokeStyle = "#ffd65f"; // yellow-ish
     ctx.lineWidth = 2;
     ctx.setLineDash([10, 10]);
+    ctx.lineDashOffset = -roadScroll * 0.8; // make dashes move
     for (let i = 1; i < laneCount; i++) {
       const x = shoulderWidth + i * laneWidth;
       ctx.beginPath();
@@ -399,66 +410,75 @@
       ctx.stroke();
     }
     ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
   }
 
   function drawPlayer(r) {
     // Shadow
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(r.x - 3, r.y + 8, r.width + 6, r.height - 14);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(r.x - 3, r.y + 10, r.width + 6, r.height - 16);
 
     // Outer outline
-    ctx.fillStyle = "#020b10";
+    ctx.fillStyle = "#02060a";
     ctx.fillRect(r.x - 1, r.y, r.width + 2, r.height);
 
-    // Main body: darker sides, lighter center (more GTA-ish)
-    ctx.fillStyle = "#0d8f3f";                      // sides
-    ctx.fillRect(r.x, r.y + 8, r.width, r.height - 16);
+    // Dark lower body
+    ctx.fillStyle = "#0b6330";
+    ctx.fillRect(r.x, r.y + 10, r.width, r.height - 18);
 
-    ctx.fillStyle = "#18d46b";                      // center strip of body
-    ctx.fillRect(r.x + 3, r.y + 10, r.width - 6, r.height - 20);
+    // Lighter center spine
+    ctx.fillStyle = "#1cdc6e";
+    ctx.fillRect(r.x + 3, r.y + 12, r.width - 6, r.height - 22);
 
-    // Hood & trunk highlights
-    ctx.fillStyle = "#1cf07a";
-    ctx.fillRect(r.x + 4, r.y + 6, r.width - 8, 6);                // hood
-    ctx.fillRect(r.x + 4, r.y + r.height - 12, r.width - 8, 6);    // trunk
+    // Hood bulge
+    ctx.fillStyle = "#25f07d";
+    ctx.fillRect(r.x + 5, r.y + 8, r.width - 10, 6);
 
-    // Roof / cabin block
-    ctx.fillStyle = "#0a5f2b";
-    ctx.fillRect(r.x + 4, r.y + 14, r.width - 8, r.height - 26);
+    // Rear deck
+    ctx.fillRect(r.x + 5, r.y + r.height - 15, r.width - 10, 6);
 
-    // Glass – split into front / roof / rear
+    // Roof / cabin
+    ctx.fillStyle = "#0a4f28";
+    ctx.fillRect(r.x + 4, r.y + 18, r.width - 8, r.height - 30);
+
+    // Glass panels
     ctx.fillStyle = "#b5f1ff";
-    ctx.fillRect(r.x + 5, r.y + 16, r.width - 10, 6);              // windshield
-    ctx.fillRect(r.x + 5, r.y + 24, r.width - 10, r.height - 40);  // roof glass
-    ctx.fillRect(r.x + 5, r.y + r.height - 22, r.width - 10, 6);   // rear
+    ctx.fillRect(r.x + 5, r.y + 20, r.width - 10, 6);               // windshield
+    ctx.fillRect(r.x + 5, r.y + 28, r.width - 10, r.height - 44);   // roof glass
+    ctx.fillRect(r.x + 5, r.y + r.height - 20, r.width - 10, 6);    // rear glass
+
+    // Side intakes / doors
+    ctx.fillStyle = "#07351c";
+    ctx.fillRect(r.x + 1, r.y + 26, 3, r.height - 36);
+    ctx.fillRect(r.x + r.width - 4, r.y + 26, 3, r.height - 36);
 
     // Headlights
     ctx.fillStyle = "#fffbd1";
-    ctx.fillRect(r.x + 3, r.y + 2, 4, 3);
-    ctx.fillRect(r.x + r.width - 7, r.y + 2, 4, 3);
+    ctx.fillRect(r.x + 3, r.y + 3, 4, 3);
+    ctx.fillRect(r.x + r.width - 7, r.y + 3, 4, 3);
 
     // Taillights
     ctx.fillStyle = "#ff4545";
     ctx.fillRect(r.x + 3, r.y + r.height - 3, 4, 2);
     ctx.fillRect(r.x + r.width - 7, r.y + r.height - 3, 4, 2);
 
-    // Wheels with tiny highlights
+    // Wheels
     ctx.fillStyle = "#000";
-    ctx.fillRect(r.x - 3, r.y + 12, 5, 13);
-    ctx.fillRect(r.x - 3, r.y + r.height - 25, 5, 13);
-    ctx.fillRect(r.x + r.width - 2, r.y + 12, 5, 13);
-    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 25, 5, 13);
+    ctx.fillRect(r.x - 3, r.y + 14, 5, 13);
+    ctx.fillRect(r.x - 3, r.y + r.height - 27, 5, 13);
+    ctx.fillRect(r.x + r.width - 2, r.y + 14, 5, 13);
+    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 27, 5, 13);
 
     ctx.fillStyle = "#444";
-    ctx.fillRect(r.x - 2, r.y + 14, 3, 5);
-    ctx.fillRect(r.x - 2, r.y + r.height - 21, 3, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + 14, 3, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + r.height - 21, 3, 5);
+    ctx.fillRect(r.x - 2, r.y + 16, 3, 5);
+    ctx.fillRect(r.x - 2, r.y + r.height - 23, 3, 5);
+    ctx.fillRect(r.x + r.width - 1, r.y + 16, 3, 5);
+    ctx.fillRect(r.x + r.width - 1, r.y + r.height - 23, 3, 5);
 
     // Mirrors
-    ctx.fillStyle = "#0d8f3f";
-    ctx.fillRect(r.x - 3, r.y + 20, 3, 4);
-    ctx.fillRect(r.x + r.width, r.y + 20, 3, 4);
+    ctx.fillStyle = "#0b6330";
+    ctx.fillRect(r.x - 3, r.y + 22, 3, 4);
+    ctx.fillRect(r.x + r.width, r.y + 22, 3, 4);
   }
 
   function drawObstacles() {
@@ -552,59 +572,46 @@
     for (let i = 0; i < billboards.length; i++) {
       const b = billboards[i];
 
+      // Support poles anchored near road edge
       const roadEdge =
         b.side === "left"
           ? shoulderWidth
           : shoulderWidth + roadWidth;
 
-      ctx.fillStyle = "#777";
-      const pole1X = roadEdge + (b.side === "left" ? -6 : -3);
-      const pole2X = roadEdge + (b.side === "left" ? -14 : -11);
-      ctx.fillRect(pole1X, b.y + b.height, 3, 24);
-      ctx.fillRect(pole2X, b.y + b.height, 3, 24);
+      ctx.fillStyle = "#666";
+      const poleOffset = b.side === "left" ? 4 : -4;
+      ctx.fillRect(roadEdge + poleOffset, b.y + b.height, 4, 26);
+      ctx.fillRect(roadEdge + poleOffset + (b.side === "left" ? 10 : -10), b.y + b.height, 4, 26);
 
-      // Board
+      // Big pixel billboard panel
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(b.x, b.y, b.width, b.height);
       ctx.strokeStyle = "#222";
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.strokeRect(b.x, b.y, b.width, b.height);
 
-      // Top bar
+      // Simple colored stripes to fake "ad" graphics
+      ctx.fillStyle = "#28c76f";
+      ctx.fillRect(b.x + 4, b.y + 6, b.width - 8, 6);
+      ctx.fillStyle = "#1e90ff";
+      ctx.fillRect(b.x + 4, b.y + 14, b.width - 16, 5);
+      ctx.fillStyle = "#ffce3b";
+      ctx.fillRect(b.x + 4, b.y + 22, b.width - 24, 4);
+
+      // Tiny pixel "text" blocks
       ctx.fillStyle = "#111";
-      ctx.fillRect(b.x, b.y, b.width, 6);
-
-      ctx.fillStyle = "#f5f5f5";
-      ctx.fillRect(b.x + 4, b.y + 1, 3, 3);
-      ctx.fillRect(b.x + b.width - 7, b.y + 1, 3, 3);
-
-      // Text
-      let text = b.text;
-      let fontSize = 8;
-      ctx.fillStyle = "#126c37";
-      ctx.font = fontSize + "px monospace";
-      let w = ctx.measureText(text).width;
-
-      while (w > b.width - 6 && fontSize > 6) {
-        fontSize -= 1;
-        ctx.font = fontSize + "px monospace";
-        w = ctx.measureText(text).width;
-      }
-
-      const textX = b.x + (b.width - w) / 2;
-      const textY = b.y + b.height / 2 + fontSize / 2 - 1;
-      ctx.fillText(text, textX, textY);
+      ctx.fillRect(b.x + 6, b.y + 30, 3, 3);
+      ctx.fillRect(b.x + 10, b.y + 30, 3, 3);
+      ctx.fillRect(b.x + 14, b.y + 30, 3, 3);
     }
   }
 
-  // --- GAME OVER OVERLAY ON CANVAS ---
+  // --- GAME OVER OVERLAY ---
 
   function drawGameOverOverlay(finalScore) {
-    // Darken screen
     ctx.fillStyle = "rgba(0,0,0,0.65)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Big yellow title with black outline to mimic GTA-ish vibe
     const title = "SEIZED BY CUSTOMS!";
     ctx.font = "bold 20px sans-serif";
     ctx.textAlign = "center";
@@ -616,7 +623,6 @@
     ctx.fillStyle = "#ffd93b";
     ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 20);
 
-    // Score text
     const scoreText = "Score: " + finalScore;
     ctx.font = "bold 14px sans-serif";
     ctx.lineWidth = 3;
@@ -625,7 +631,6 @@
     ctx.fillStyle = "#ffffff";
     ctx.fillText(scoreText, canvas.width / 2, canvas.height / 2 + 5);
 
-    // Hint
     const hint = "Click / tap or press Play to try again";
     ctx.font = "11px sans-serif";
     ctx.lineWidth = 2;
@@ -634,7 +639,6 @@
     ctx.fillStyle = "#e0e0e0";
     ctx.fillText(hint, canvas.width / 2, canvas.height / 2 + 28);
 
-    // Reset alignment so other text doesn't get weird
     ctx.textAlign = "start";
     ctx.textBaseline = "alphabetic";
   }
@@ -714,4 +718,3 @@
   // Start first run
   resetGame();
 })();
-
