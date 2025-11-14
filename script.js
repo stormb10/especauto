@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – sprite version ===
+// === ESPEC IMPORT RUN – sprite version (with lights + bounce) ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -87,7 +87,7 @@
   const player = {
     x: 0,
     y: 0,
-    width: 40,  // temporary, will be overwritten once carImg loads
+    width: 40,  // temporary, overwritten after image load
     height: 80,
   };
 
@@ -95,7 +95,10 @@
   let rightPressed = false;
   const steeringSpeed = 0.26; // px per ms
 
-  // when the car image loads, compute real size & position with correct aspect
+  // bounce timer (visual only)
+  let bounceTime = 0;
+
+  // when the car image loads, size it with correct aspect
   carImg.onload = () => {
     const targetHeight = canvas.height * 0.18; // ~18% of canvas height
     const scale = targetHeight / carImg.naturalHeight;
@@ -156,8 +159,9 @@
     speed = 2.3;
     score = 0;
     roadScroll = 0;
+    bounceTime = 0;
 
-    // position player using current sprite size (works after onload too)
+    // position player using current sprite size
     player.x = laneCenterX(1, player.width);
     player.y = canvas.height - player.height - 24;
 
@@ -246,6 +250,7 @@
 
     const dt = timestamp - lastTime;
     lastTime = timestamp;
+    bounceTime += dt;
 
     // Steering
     let steerDir = 0;
@@ -337,8 +342,8 @@
     drawRoad();
     drawObstacles();
     drawPickups();
-    drawPlayer(playerRect);
-    drawBillboards(); // draw LAST so car appears "under" billboards
+    drawPlayer(playerRect);  // car
+    drawBillboards();        // on top → car feels under them
   }
 
   function drawRoad() {
@@ -409,21 +414,6 @@
       ctx.fillRect(shoulderWidth, y, roadWidth, 2);
     }
 
-    // Crosswalks moving with road
-    ctx.fillStyle = "rgba(240,240,240,0.55)";
-    const spacing = 160;
-    for (let base = -spacing; base < canvas.height + spacing; base += spacing) {
-      const y = base + roadScroll;
-      for (
-        let x = shoulderWidth + 12;
-        x < shoulderWidth + roadWidth - 30;
-        x += 26
-      ) {
-        ctx.fillRect(x, y + 4, 18, 4);
-        ctx.fillRect(x, y + 12, 18, 4);
-      }
-    }
-
     // Yellow lane lines (scrolling)
     ctx.strokeStyle = "#ffd65f";
     ctx.lineWidth = 2;
@@ -438,20 +428,57 @@
     }
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
+
+    // Light poles + beams (replacing crosswalks)
+    const lightSpacing = 170;
+    for (let base = -lightSpacing; base < canvas.height + lightSpacing; base += lightSpacing) {
+      const y = base + (roadScroll * 0.9);
+
+      // Left pole
+      const leftPoleX = shoulderWidth - 10;
+      const rightPoleX = shoulderWidth + roadWidth + 6;
+
+      ctx.fillStyle = "#555";
+      ctx.fillRect(leftPoleX, y, 3, 18);
+      ctx.fillRect(rightPoleX, y, 3, 18);
+
+      // Light beams (simple trapezoids on road)
+      ctx.fillStyle = "rgba(255, 240, 180, 0.12)";
+      ctx.beginPath();
+      ctx.moveTo(leftPoleX + 1, y + 18);
+      ctx.lineTo(leftPoleX + 16, y + 18);
+      ctx.lineTo(shoulderWidth + 30, y + 80);
+      ctx.lineTo(shoulderWidth + 8, y + 80);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(rightPoleX + 1, y + 18);
+      ctx.lineTo(rightPoleX - 16, y + 18);
+      ctx.lineTo(shoulderWidth + roadWidth - 8, y + 80);
+      ctx.lineTo(shoulderWidth + roadWidth - 30, y + 80);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 
   function drawPlayer(r) {
-    // Simple shadow
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(r.x - 4, r.y + 10, r.width + 8, r.height - 18);
+    // tiny bounce, visual only
+    const bounce = Math.sin(bounceTime * 0.008) * 2.5;
+    const displayY = r.y + bounce;
+
+    // small, tight shadow (no big rectangle)
+    const shadowWidth = r.width * 0.7;
+    const shadowX = r.x + r.width * 0.15;
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(shadowX, displayY + r.height - 10, shadowWidth, 5);
 
     if (carImg.complete && carImg.naturalWidth) {
-      ctx.imageSmoothingEnabled = false; // keep pixels crisp
-      ctx.drawImage(carImg, r.x, r.y, r.width, r.height);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(carImg, r.x, displayY, r.width, r.height);
     } else {
-      // Fallback: simple green block if image not loaded yet
       ctx.fillStyle = "#1cdc6e";
-      ctx.fillRect(r.x, r.y, r.width, r.height);
+      ctx.fillRect(r.x, displayY, r.width, r.height);
     }
   }
 
@@ -686,4 +713,3 @@
   // Start first run
   resetGame();
 })();
-
