@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – sprite version (with lights + bounce) ===
+// === ESPEC IMPORT RUN – sprite version (with lights + bounce + tighter hitbox) ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -87,18 +87,15 @@
   const player = {
     x: 0,
     y: 0,
-    width: 40,  // temporary, overwritten after image load
+    width: 40,  // temporary; overwritten when car image loads
     height: 80,
   };
 
   let leftPressed = false;
   let rightPressed = false;
   const steeringSpeed = 0.26; // px per ms
+  let bounceTime = 0;         // for subtle bounce
 
-  // bounce timer (visual only)
-  let bounceTime = 0;
-
-  // when the car image loads, size it with correct aspect
   carImg.onload = () => {
     const targetHeight = canvas.height * 0.18; // ~18% of canvas height
     const scale = targetHeight / carImg.naturalHeight;
@@ -133,6 +130,19 @@
     return laneStart + (laneWidth - objWidth) / 2;
   }
 
+  // smaller hitbox inside the sprite (so the car feels tighter)
+  function getPlayerHitbox(r) {
+    const padX = r.width * 0.18;
+    const padTop = r.height * 0.25;
+    const padBottom = r.height * 0.10;
+    return {
+      x: r.x + padX,
+      y: r.y + padTop,
+      width: r.width - padX * 2,
+      height: r.height - padTop - padBottom,
+    };
+  }
+
   function rectsCollide(a, b) {
     return !(
       a.x > b.x + b.width ||
@@ -161,7 +171,6 @@
     roadScroll = 0;
     bounceTime = 0;
 
-    // position player using current sprite size
     player.x = laneCenterX(1, player.width);
     player.y = canvas.height - player.height - 24;
 
@@ -290,6 +299,7 @@
       width: player.width,
       height: player.height,
     };
+    const playerHitbox = getPlayerHitbox(playerRect);
     lastPlayerRect = playerRect;
 
     // Move entities
@@ -302,7 +312,7 @@
     pickups = pickups.filter((p) => p.y < canvas.height + 80);
     billboards = billboards.filter((b) => b.y < canvas.height + 130);
 
-    // Collisions: obstacles
+    // Collisions: obstacles (use smaller player hitbox)
     for (let i = 0; i < obstacles.length; i++) {
       const o = obstacles[i];
       const oRect = {
@@ -311,7 +321,7 @@
         width: o.width,
         height: o.height,
       };
-      if (rectsCollide(playerRect, oRect)) {
+      if (rectsCollide(playerHitbox, oRect)) {
         gameOver();
         return;
       }
@@ -326,7 +336,7 @@
         width: p.width,
         height: p.height,
       };
-      if (rectsCollide(playerRect, pRect)) {
+      if (rectsCollide(playerHitbox, pRect)) {
         updateScore(25);
         pickups.splice(i, 1);
       }
@@ -342,8 +352,8 @@
     drawRoad();
     drawObstacles();
     drawPickups();
-    drawPlayer(playerRect);  // car
-    drawBillboards();        // on top → car feels under them
+    drawPlayer(playerRect);  // car with bounce
+    drawBillboards();        // on top
   }
 
   function drawRoad() {
@@ -429,35 +439,55 @@
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
 
-    // Light poles + beams (replacing crosswalks)
-    const lightSpacing = 170;
-    for (let base = -lightSpacing; base < canvas.height + lightSpacing; base += lightSpacing) {
-      const y = base + (roadScroll * 0.9);
+    // === Light poles + orangey beams with round patch ===
+    const lightSpacing = 180;
+    const offset = roadScroll % lightSpacing;
+    const leftPoleX = shoulderWidth - 10;
+    const rightPoleX = shoulderWidth + roadWidth + 6;
 
-      // Left pole
-      const leftPoleX = shoulderWidth - 10;
-      const rightPoleX = shoulderWidth + roadWidth + 6;
-
+    for (let y = -lightSpacing + offset; y < canvas.height + lightSpacing; y += lightSpacing) {
+      // Poles
       ctx.fillStyle = "#555";
-      ctx.fillRect(leftPoleX, y, 3, 18);
-      ctx.fillRect(rightPoleX, y, 3, 18);
+      ctx.fillRect(leftPoleX, y, 3, 20);
+      ctx.fillRect(rightPoleX, y, 3, 20);
 
-      // Light beams (simple trapezoids on road)
-      ctx.fillStyle = "rgba(255, 240, 180, 0.12)";
+      // Beams (trapezoids)
+      ctx.fillStyle = "rgba(255, 210, 120, 0.25)";
+
       ctx.beginPath();
-      ctx.moveTo(leftPoleX + 1, y + 18);
-      ctx.lineTo(leftPoleX + 16, y + 18);
-      ctx.lineTo(shoulderWidth + 30, y + 80);
-      ctx.lineTo(shoulderWidth + 8, y + 80);
+      ctx.moveTo(leftPoleX + 1, y + 20);
+      ctx.lineTo(leftPoleX + 18, y + 20);
+      ctx.lineTo(shoulderWidth + 30, y + 90);
+      ctx.lineTo(shoulderWidth + 8, y + 90);
       ctx.closePath();
       ctx.fill();
 
       ctx.beginPath();
-      ctx.moveTo(rightPoleX + 1, y + 18);
-      ctx.lineTo(rightPoleX - 16, y + 18);
-      ctx.lineTo(shoulderWidth + roadWidth - 8, y + 80);
-      ctx.lineTo(shoulderWidth + roadWidth - 30, y + 80);
+      ctx.moveTo(rightPoleX + 2, y + 20);
+      ctx.lineTo(rightPoleX - 16, y + 20);
+      ctx.lineTo(shoulderWidth + roadWidth - 8, y + 90);
+      ctx.lineTo(shoulderWidth + roadWidth - 30, y + 90);
       ctx.closePath();
+      ctx.fill();
+
+      // Round spotlight patch on road
+      const spotY = y + 95;
+      const spotX = shoulderWidth + roadWidth / 2;
+      const r = 32;
+      const grad = ctx.createRadialGradient(
+        spotX,
+        spotY,
+        4,
+        spotX,
+        spotY,
+        r
+      );
+      grad.addColorStop(0, "rgba(255, 210, 120, 0.4)");
+      grad.addColorStop(0.55, "rgba(255, 210, 120, 0.12)");
+      grad.addColorStop(1, "rgba(0, 0, 0, 0.40)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(spotX, spotY, r, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -467,7 +497,7 @@
     const bounce = Math.sin(bounceTime * 0.008) * 2.5;
     const displayY = r.y + bounce;
 
-    // small, tight shadow (no big rectangle)
+    // tight little shadow
     const shadowWidth = r.width * 0.7;
     const shadowX = r.x + r.width * 0.15;
     ctx.fillStyle = "rgba(0,0,0,0.45)";
@@ -579,7 +609,6 @@
       const b = billboards[i];
       const img = billboardImgs[b.imgIndex];
 
-      // billboard sprite
       if (img && img.complete && img.naturalWidth) {
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(img, b.x, b.y, b.width, b.height);
@@ -591,7 +620,6 @@
         ctx.strokeRect(b.x, b.y, b.width, b.height);
       }
 
-      // pole under billboard so it feels anchored
       const poleX =
         b.side === "left"
           ? shoulderWidth + 8
