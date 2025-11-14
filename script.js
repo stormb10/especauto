@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – GTA-ish v6 ===
+// === ESPEC IMPORT RUN – GTA-ish v7 (art upgrade) ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -69,17 +69,17 @@
   const roadWidth = canvas.width - shoulderWidth * 2;
   const laneWidth = roadWidth / laneCount;
 
-  // --- PLAYER CAR ---
+  // --- PLAYER CAR (slightly larger for more pixels) ---
   const player = {
     x: 0, // set in resetGame()
-    y: canvas.height - 82,
-    width: 28,
-    height: 52
+    y: canvas.height - 92,
+    width: 30,
+    height: 60,
   };
 
   let leftPressed = false;
   let rightPressed = false;
-  const steeringSpeed = 0.26;
+  const steeringSpeed = 0.26; // px per ms
 
   // --- GAME STATE ---
   let obstacles = [];
@@ -96,12 +96,32 @@
   let roadScroll = 0;
   let lastPlayerRect = null;
 
-  const billboardTexts = [
-    "ES",
-    "$$",
-    "FEES",
-    "LEGAL",
-    "25YR"
+  // Billboard "ad" styles (just colors/blocks – no readable text needed)
+  const billboardStyles = [
+    {
+      bg: "#202a4f",
+      bar1: "#ffce3b",
+      bar2: "#ff4b6b",
+      bar3: "#28c76f",
+    },
+    {
+      bg: "#5a1739",
+      bar1: "#ff8a00",
+      bar2: "#ffd93b",
+      bar3: "#ffffff",
+    },
+    {
+      bg: "#123b3f",
+      bar1: "#1e90ff",
+      bar2: "#28c76f",
+      bar3: "#ffce3b",
+    },
+    {
+      bg: "#3a1d4f",
+      bar1: "#ff4b6b",
+      bar2: "#ffce3b",
+      bar3: "#8be9fd",
+    },
   ];
 
   // --- HELPERS ---
@@ -160,52 +180,52 @@
     const type = randomObstacleType();
 
     if (Math.random() < 0.72) {
-      let width = 24;
-      let height = 28;
+      let width = 26;
+      let height = 32;
 
       if (type === "semi") {
         width = laneWidth * 0.7;
-        height = 72;
+        height = 80;
       }
 
       obstacles.push({
-        lane: lane,
-        type: type,
+        lane,
+        type,
         y: -height,
-        width: width,
-        height: height
+        width,
+        height,
       });
     } else {
       pickups.push({
-        lane: lane,
+        lane,
         y: -24,
         width: 20,
-        height: 20
+        height: 20,
       });
     }
   }
 
   function spawnBillboard() {
     const side = Math.random() < 0.5 ? "left" : "right";
-    const text = billboardTexts[Math.floor(Math.random() * billboardTexts.length)];
+    const styleIndex = Math.floor(Math.random() * billboardStyles.length);
 
-    // Bigger boards, allowed to hang offscreen
-    const boardWidth = 60;
-    const boardHeight = 40;
-    const overhang = 20;
+    // Bigger boards, allowed to hang offscreen for that “city canyon” feel
+    const boardWidth = 80;
+    const boardHeight = 48;
+    const overhang = 26;
 
     const x =
       side === "left"
         ? -overhang
-        : canvas.width - boardWidth + overhang - 10; // a bit inside
+        : canvas.width - boardWidth + overhang - 12;
 
     billboards.push({
-      side: side,
-      text: text,
-      x: x,
-      y: -boardHeight - 40,
+      side,
+      styleIndex,
+      x,
+      y: -boardHeight - 60,
       width: boardWidth,
-      height: boardHeight
+      height: boardHeight,
     });
   }
 
@@ -263,19 +283,25 @@
       x: player.x,
       y: player.y,
       width: player.width,
-      height: player.height
+      height: player.height,
     };
     lastPlayerRect = playerRect;
 
     // Move entities
-    obstacles.forEach(o => { o.y += speed; });
-    pickups.forEach(p => { p.y += speed; });
-    billboards.forEach(b => { b.y += speed * 0.7; });
+    obstacles.forEach((o) => {
+      o.y += speed;
+    });
+    pickups.forEach((p) => {
+      p.y += speed;
+    });
+    billboards.forEach((b) => {
+      b.y += speed * 0.7;
+    });
 
     // Cull
-    obstacles = obstacles.filter(o => o.y < canvas.height + 80);
-    pickups = pickups.filter(p => p.y < canvas.height + 80);
-    billboards = billboards.filter(b => b.y < canvas.height + 120);
+    obstacles = obstacles.filter((o) => o.y < canvas.height + 80);
+    pickups = pickups.filter((p) => p.y < canvas.height + 80);
+    billboards = billboards.filter((b) => b.y < canvas.height + 130);
 
     // Collisions: obstacles
     for (let i = 0; i < obstacles.length; i++) {
@@ -284,7 +310,7 @@
         x: laneCenterX(o.lane, o.width),
         y: o.y,
         width: o.width,
-        height: o.height
+        height: o.height,
       };
       if (rectsCollide(playerRect, oRect)) {
         gameOver();
@@ -299,7 +325,7 @@
         x: laneCenterX(p.lane, p.width),
         y: p.y,
         width: p.width,
-        height: p.height
+        height: p.height,
       };
       if (rectsCollide(playerRect, pRect)) {
         updateScore(25);
@@ -345,7 +371,10 @@
 
     // Road base gradient
     const roadGradient = ctx.createLinearGradient(
-      shoulderWidth, 0, shoulderWidth, canvas.height
+      shoulderWidth,
+      0,
+      shoulderWidth,
+      canvas.height
     );
     roadGradient.addColorStop(0, "#3c4250");
     roadGradient.addColorStop(0.5, "#363b48");
@@ -391,17 +420,21 @@
     const spacing = 160;
     for (let base = -spacing; base < canvas.height + spacing; base += spacing) {
       const y = base + roadScroll;
-      for (let x = shoulderWidth + 12; x < shoulderWidth + roadWidth - 30; x += 26) {
+      for (
+        let x = shoulderWidth + 12;
+        x < shoulderWidth + roadWidth - 30;
+        x += 26
+      ) {
         ctx.fillRect(x, y + 4, 18, 4);
         ctx.fillRect(x, y + 12, 18, 4);
       }
     }
 
-    // Lane lines (now scrolling)
-    ctx.strokeStyle = "#ffd65f"; // yellow-ish
+    // Yellow lane lines (scrolling)
+    ctx.strokeStyle = "#ffd65f";
     ctx.lineWidth = 2;
     ctx.setLineDash([10, 10]);
-    ctx.lineDashOffset = -roadScroll * 0.8; // make dashes move
+    ctx.lineDashOffset = -roadScroll * 0.8;
     for (let i = 1; i < laneCount; i++) {
       const x = shoulderWidth + i * laneWidth;
       ctx.beginPath();
@@ -413,72 +446,87 @@
     ctx.lineDashOffset = 0;
   }
 
+  // New detailed sports car sprite
   function drawPlayer(r) {
     // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(r.x - 3, r.y + 10, r.width + 6, r.height - 16);
+    ctx.fillRect(r.x - 4, r.y + 12, r.width + 8, r.height - 18);
 
     // Outer outline
     ctx.fillStyle = "#02060a";
     ctx.fillRect(r.x - 1, r.y, r.width + 2, r.height);
 
-    // Dark lower body
-    ctx.fillStyle = "#0b6330";
-    ctx.fillRect(r.x, r.y + 10, r.width, r.height - 18);
+    // Lower darker body
+    ctx.fillStyle = "#073824";
+    ctx.fillRect(r.x, r.y + 10, r.width, r.height - 16);
 
-    // Lighter center spine
+    // Main body spine (light green)
     ctx.fillStyle = "#1cdc6e";
-    ctx.fillRect(r.x + 3, r.y + 12, r.width - 6, r.height - 22);
+    ctx.fillRect(r.x + 4, r.y + 12, r.width - 8, r.height - 22);
 
-    // Hood bulge
-    ctx.fillStyle = "#25f07d";
-    ctx.fillRect(r.x + 5, r.y + 8, r.width - 10, 6);
+    // Hood highlight
+    ctx.fillStyle = "#2af581";
+    ctx.fillRect(r.x + 6, r.y + 8, r.width - 12, 8);
 
-    // Rear deck
-    ctx.fillRect(r.x + 5, r.y + r.height - 15, r.width - 10, 6);
+    // Rear deck highlight
+    ctx.fillRect(r.x + 6, r.y + r.height - 18, r.width - 12, 8);
 
-    // Roof / cabin
-    ctx.fillStyle = "#0a4f28";
-    ctx.fillRect(r.x + 4, r.y + 18, r.width - 8, r.height - 30);
+    // Roof / cabin darker block
+    ctx.fillStyle = "#094525";
+    ctx.fillRect(r.x + 6, r.y + 22, r.width - 12, r.height - 34);
 
-    // Glass panels
+    // Glass: front, roof, rear
     ctx.fillStyle = "#b5f1ff";
-    ctx.fillRect(r.x + 5, r.y + 20, r.width - 10, 6);               // windshield
-    ctx.fillRect(r.x + 5, r.y + 28, r.width - 10, r.height - 44);   // roof glass
-    ctx.fillRect(r.x + 5, r.y + r.height - 20, r.width - 10, 6);    // rear glass
+    ctx.fillRect(r.x + 7, r.y + 24, r.width - 14, 6); // windshield
+    ctx.fillRect(
+      r.x + 7,
+      r.y + 32,
+      r.width - 14,
+      r.height - 48
+    ); // roof glass
+    ctx.fillRect(
+      r.x + 7,
+      r.y + r.height - 22,
+      r.width - 14,
+      6
+    ); // rear glass
 
-    // Side intakes / doors
-    ctx.fillStyle = "#07351c";
-    ctx.fillRect(r.x + 1, r.y + 26, 3, r.height - 36);
-    ctx.fillRect(r.x + r.width - 4, r.y + 26, 3, r.height - 36);
+    // Side skirts / intakes
+    ctx.fillStyle = "#052417";
+    ctx.fillRect(r.x + 1, r.y + 28, 3, r.height - 36);
+    ctx.fillRect(r.x + r.width - 4, r.y + 28, 3, r.height - 36);
 
     // Headlights
     ctx.fillStyle = "#fffbd1";
-    ctx.fillRect(r.x + 3, r.y + 3, 4, 3);
-    ctx.fillRect(r.x + r.width - 7, r.y + 3, 4, 3);
+    ctx.fillRect(r.x + 4, r.y + 4, 4, 3);
+    ctx.fillRect(r.x + r.width - 8, r.y + 4, 4, 3);
 
     // Taillights
     ctx.fillStyle = "#ff4545";
-    ctx.fillRect(r.x + 3, r.y + r.height - 3, 4, 2);
-    ctx.fillRect(r.x + r.width - 7, r.y + r.height - 3, 4, 2);
+    ctx.fillRect(r.x + 4, r.y + r.height - 4, 4, 3);
+    ctx.fillRect(r.x + r.width - 8, r.y + r.height - 4, 4, 3);
 
     // Wheels
     ctx.fillStyle = "#000";
-    ctx.fillRect(r.x - 3, r.y + 14, 5, 13);
-    ctx.fillRect(r.x - 3, r.y + r.height - 27, 5, 13);
-    ctx.fillRect(r.x + r.width - 2, r.y + 14, 5, 13);
-    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 27, 5, 13);
+    ctx.fillRect(r.x - 4, r.y + 16, 6, 14);
+    ctx.fillRect(r.x - 4, r.y + r.height - 30, 6, 14);
+    ctx.fillRect(r.x + r.width - 2, r.y + 16, 6, 14);
+    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 30, 6, 14);
 
     ctx.fillStyle = "#444";
-    ctx.fillRect(r.x - 2, r.y + 16, 3, 5);
-    ctx.fillRect(r.x - 2, r.y + r.height - 23, 3, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + 16, 3, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + r.height - 23, 3, 5);
+    ctx.fillRect(r.x - 3, r.y + 18, 4, 5);
+    ctx.fillRect(r.x - 3, r.y + r.height - 26, 4, 5);
+    ctx.fillRect(r.x + r.width - 1, r.y + 18, 4, 5);
+    ctx.fillRect(r.x + r.width - 1, r.y + r.height - 26, 4, 5);
 
     // Mirrors
-    ctx.fillStyle = "#0b6330";
-    ctx.fillRect(r.x - 3, r.y + 22, 3, 4);
-    ctx.fillRect(r.x + r.width, r.y + 22, 3, 4);
+    ctx.fillStyle = "#0d6a39";
+    ctx.fillRect(r.x - 3, r.y + 26, 3, 4);
+    ctx.fillRect(r.x + r.width, r.y + 26, 3, 4);
+
+    // Little hood scoop to echo your reference
+    ctx.fillStyle = "#06351f";
+    ctx.fillRect(r.x + r.width / 2 - 4, r.y + 10, 8, 6);
   }
 
   function drawObstacles() {
@@ -487,7 +535,7 @@
       const x = laneCenterX(o.lane, o.width);
 
       if (o.type === "semi") {
-        const cabHeight = 22;
+        const cabHeight = 24;
         const trailerHeight = o.height - cabHeight;
 
         // Trailer
@@ -503,7 +551,12 @@
         ctx.fillStyle = "#50545d";
         ctx.fillRect(x, o.y + trailerHeight, o.width, cabHeight);
         ctx.fillStyle = "#2d3138";
-        ctx.fillRect(x + 2, o.y + trailerHeight + 4, o.width - 4, cabHeight - 8);
+        ctx.fillRect(
+          x + 2,
+          o.y + trailerHeight + 4,
+          o.width - 4,
+          cabHeight - 8
+        );
 
         ctx.fillStyle = "#9be5ff";
         ctx.fillRect(x + 4, o.y + trailerHeight + 4, o.width - 8, 5);
@@ -571,6 +624,7 @@
   function drawBillboards() {
     for (let i = 0; i < billboards.length; i++) {
       const b = billboards[i];
+      const style = billboardStyles[b.styleIndex % billboardStyles.length];
 
       // Support poles anchored near road edge
       const roadEdge =
@@ -579,30 +633,35 @@
           : shoulderWidth + roadWidth;
 
       ctx.fillStyle = "#666";
-      const poleOffset = b.side === "left" ? 4 : -4;
-      ctx.fillRect(roadEdge + poleOffset, b.y + b.height, 4, 26);
-      ctx.fillRect(roadEdge + poleOffset + (b.side === "left" ? 10 : -10), b.y + b.height, 4, 26);
+      const poleBaseX = b.side === "left" ? roadEdge + 4 : roadEdge - 8;
+      ctx.fillRect(poleBaseX, b.y + b.height, 4, 28);
+      ctx.fillRect(poleBaseX + (b.side === "left" ? 10 : -10), b.y + b.height, 4, 28);
 
-      // Big pixel billboard panel
-      ctx.fillStyle = "#ffffff";
+      // Big billboard panel
+      ctx.fillStyle = style.bg;
       ctx.fillRect(b.x, b.y, b.width, b.height);
-      ctx.strokeStyle = "#222";
+      ctx.strokeStyle = "#111";
       ctx.lineWidth = 2;
       ctx.strokeRect(b.x, b.y, b.width, b.height);
 
-      // Simple colored stripes to fake "ad" graphics
-      ctx.fillStyle = "#28c76f";
-      ctx.fillRect(b.x + 4, b.y + 6, b.width - 8, 6);
-      ctx.fillStyle = "#1e90ff";
-      ctx.fillRect(b.x + 4, b.y + 14, b.width - 16, 5);
-      ctx.fillStyle = "#ffce3b";
-      ctx.fillRect(b.x + 4, b.y + 22, b.width - 24, 4);
+      // Colored bars (fake ad)
+      ctx.fillStyle = style.bar1;
+      ctx.fillRect(b.x + 4, b.y + 6, b.width - 8, 8);
+      ctx.fillStyle = style.bar2;
+      ctx.fillRect(b.x + 6, b.y + 18, b.width - 12, 7);
+      ctx.fillStyle = style.bar3;
+      ctx.fillRect(b.x + 8, b.y + 29, b.width - 16, 6);
 
-      // Tiny pixel "text" blocks
-      ctx.fillStyle = "#111";
-      ctx.fillRect(b.x + 6, b.y + 30, 3, 3);
-      ctx.fillRect(b.x + 10, b.y + 30, 3, 3);
-      ctx.fillRect(b.x + 14, b.y + 30, 3, 3);
+      // Pixel “lights” along top
+      ctx.fillStyle = "#f8f8f8";
+      for (let lx = b.x + 6; lx < b.x + b.width - 4; lx += 12) {
+        ctx.fillRect(lx, b.y + 2, 3, 3);
+      }
+
+      // Tiny pixel icon block
+      ctx.fillStyle = "#000";
+      ctx.fillRect(b.x + 6, b.y + b.height - 10, 4, 4);
+      ctx.fillRect(b.x + 12, b.y + b.height - 10, 4, 4);
     }
   }
 
@@ -718,3 +777,4 @@
   // Start first run
   resetGame();
 })();
+
