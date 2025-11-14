@@ -50,7 +50,8 @@
   // Footer year
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
-// === ESPEC IMPORT RUN – GTA-ISH TOP-DOWN VERSION v2 ===
+
+// === ESPEC IMPORT RUN – GTA-ish v3 ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -69,18 +70,17 @@
   const roadWidth = canvas.width - shoulderWidth * 2;
   let laneWidth = roadWidth / laneCount;
 
-  // --- PLAYER CAR (continuous X, not lane-locked) ---
+  // --- PLAYER CAR (continuous X, steering by holding key) ---
   const player = {
-    x: shoulderWidth + roadWidth / 2,           // center; will be reset
+    x: shoulderWidth + roadWidth / 2,           // will be reset in resetGame
     width: 26,
     height: 48,
     y: canvas.height - 80
   };
 
-  // steering flags
   let leftPressed = false;
   let rightPressed = false;
-  const steeringSpeed = 0.25; // px per ms (~250px/s)
+  const steeringSpeed = 0.26; // px per ms (~260px/s)
 
   // --- GAME STATE ---
   let obstacles = [];
@@ -88,22 +88,22 @@
   let billboards = [];
   let lastSpawn = 0;
   let lastBillboardSpawn = 0;
-  let spawnInterval = 900;      // ms between obstacles/pickups
-  let billboardInterval = 2600; // ms between billboards
+  let spawnInterval = 900;
+  let billboardInterval = 2600;
   let speed = 2.3;
   let running = false;
   let lastTime = 0;
   let score = 0;
+  let roadScroll = 0; // for crosswalks/road texture
 
   const billboardTexts = [
-    "Fees",
-    "Legal",
-    "ESpec",
-    "25yr",
-    "No fees"
+    "Avoid fees",
+    "Legal import",
+    "ESpec help",
+    "25-year rule",
+    "No surprises"
   ];
 
-  // Center X for a lane, given object width
   function laneCenterX(laneIndex, objWidth) {
     const laneStart = shoulderWidth + laneIndex * laneWidth;
     return laneStart + (laneWidth - objWidth) / 2;
@@ -120,6 +120,7 @@
     speed = 2.3;
     spawnInterval = 900;
     score = 0;
+    roadScroll = 0;
 
     // start the car in middle lane
     player.x = laneCenterX(1, player.width);
@@ -139,24 +140,37 @@
   }
 
   function randomObstacleType() {
-    const types = ["tax", "epa", "dot", "cbp", "truck"];
+    // include semi trucks as bigger hazards
+    const types = ["tax", "epa", "dot", "cbp", "semi"];
     return types[Math.floor(Math.random() * types.length)];
   }
 
   function spawnStuff() {
     const lane = Math.floor(Math.random() * laneCount);
-    if (Math.random() < 0.7) {
+    const type = randomObstacleType();
+
+    if (Math.random() < 0.72) {
+      // obstacle
+      let width = 24;
+      let height = 28;
+
+      if (type === "semi") {
+        width = laneWidth * 0.7;
+        height = 72;
+      }
+
       obstacles.push({
         lane,
-        y: -50,
-        width: 26,
-        height: 30,
-        type: randomObstacleType()
+        y: -height,
+        width,
+        height,
+        type
       });
     } else {
+      // pickup
       pickups.push({
         lane,
-        y: -30,
+        y: -24,
         width: 20,
         height: 20
       });
@@ -196,7 +210,7 @@
     const dt = timestamp - lastTime;
     lastTime = timestamp;
 
-    // Steering – hold key to slide across lanes
+    // Steering – hold key to slide across road
     let steerDir = 0;
     if (leftPressed && !rightPressed) steerDir = -1;
     if (rightPressed && !leftPressed) steerDir = 1;
@@ -209,19 +223,19 @@
       if (player.x > maxX) player.x = maxX;
     }
 
-    // Gradually ramp difficulty
+    // Difficulty ramp + road scroll
     updateScore(dt / 100);
     speed += dt * 0.00003;
     spawnInterval = Math.max(430, spawnInterval - dt * 0.0045);
+    roadScroll = (roadScroll + speed * 0.9) % 160;
 
-    // Spawn obstacles / pickups
+    // Spawn stuff
     lastSpawn += dt;
     if (lastSpawn >= spawnInterval) {
       spawnStuff();
       lastSpawn = 0;
     }
 
-    // Spawn billboards
     lastBillboardSpawn += dt;
     if (lastBillboardSpawn >= billboardInterval) {
       spawnBillboard();
@@ -235,15 +249,15 @@
       height: player.height
     };
 
-    // Move everything down
+    // Move entities
     for (let o of obstacles) o.y += speed;
     for (let p of pickups) p.y += speed;
     for (let b of billboards) b.y += speed * 0.7;
 
-    // Cull off-screen
-    obstacles = obstacles.filter(o => o.y < canvas.height + 60);
-    pickups = pickups.filter(p => p.y < canvas.height + 60);
-    billboards = billboards.filter(b => b.y < canvas.height + 80);
+    // Cull
+    obstacles = obstacles.filter(o => o.y < canvas.height + 80);
+    pickups = pickups.filter(p => p.y < canvas.height + 80);
+    billboards = billboards.filter(b => b.y < canvas.height + 100);
 
     // Collisions: obstacles
     for (let o of obstacles) {
@@ -291,33 +305,43 @@
   function drawRoad() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Whole background
+    // Background
     ctx.fillStyle = "#050609";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Shoulders / sidewalks base
-    ctx.fillStyle = "#191919";
+    // Sidewalk / building strip base
+    ctx.fillStyle = "#181818";
     ctx.fillRect(0, 0, shoulderWidth, canvas.height);
     ctx.fillRect(canvas.width - shoulderWidth, 0, shoulderWidth, canvas.height);
 
-    // Simple "building" texture: vertical stripes in shoulders
+    // Simple building texture (columns)
     for (let x = 2; x < shoulderWidth; x += 8) {
-      ctx.fillStyle = (x / 8) % 2 === 0 ? "#232323" : "#272727";
+      ctx.fillStyle = (x / 8) % 2 === 0 ? "#242424" : "#2a2a2a";
       ctx.fillRect(x, 0, 5, canvas.height);
     }
     for (let x = canvas.width - shoulderWidth + 1; x < canvas.width - 2; x += 8) {
-      ctx.fillStyle = (x / 8) % 2 === 0 ? "#232323" : "#272727";
+      ctx.fillStyle = (x / 8) % 2 === 0 ? "#242424" : "#2a2a2a";
       ctx.fillRect(x, 0, 5, canvas.height);
     }
 
     // Road base
-    ctx.fillStyle = "#333642";
+    ctx.fillStyle = "#343845";
     ctx.fillRect(shoulderWidth, 0, roadWidth, canvas.height);
 
-    // Road texture: faint horizontal bands
+    // Road bands
     ctx.fillStyle = "rgba(255,255,255,0.02)";
-    for (let y = 10; y < canvas.height; y += 18) {
+    for (let y = -roadScroll; y < canvas.height; y += 26) {
       ctx.fillRect(shoulderWidth, y, roadWidth, 2);
+    }
+
+    // Crosswalks: repeated zebra stripes
+    ctx.fillStyle = "rgba(240,240,240,0.55)";
+    const spacing = 160;
+    for (let y = -roadScroll; y < canvas.height + spacing; y += spacing) {
+      for (let x = shoulderWidth + 10; x < shoulderWidth + roadWidth - 30; x += 26) {
+        ctx.fillRect(x, y + 4, 18, 4);
+        ctx.fillRect(x, y + 12, 18, 4);
+      }
     }
 
     // Lane lines
@@ -335,43 +359,44 @@
   }
 
   function drawPlayer(r) {
-    // Dark shadow under car
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(r.x - 2, r.y + 6, r.width + 4, r.height - 12);
+    // Shadow
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.fillRect(r.x - 3, r.y + 8, r.width + 6, r.height - 14);
 
-    // Main body outline
-    ctx.fillStyle = "#02150b";
+    // Outline
+    ctx.fillStyle = "#02110b";
     ctx.fillRect(r.x - 1, r.y, r.width + 2, r.height);
 
-    // Two-tone body for "sporty" look
-    ctx.fillStyle = "#1df56b";             // main green
-    ctx.fillRect(r.x, r.y + 4, r.width, r.height - 8);
+    // Body main (sporty coupe)
+    ctx.fillStyle = "#19e76b";
+    ctx.fillRect(r.x, r.y + 6, r.width, r.height - 12);
 
-    ctx.fillStyle = "#10c14c";             // darker side skirts
-    ctx.fillRect(r.x, r.y + r.height - 16, r.width, 12);
+    // Side skirts
+    ctx.fillStyle = "#10b753";
+    ctx.fillRect(r.x, r.y + r.height - 18, r.width, 12);
 
-    // Roof / cabin
+    // Cabin / greenhouse
     ctx.fillStyle = "#0f8e3b";
-    ctx.fillRect(r.x + 4, r.y + 11, r.width - 8, r.height - 24);
+    ctx.fillRect(r.x + 4, r.y + 13, r.width - 8, r.height - 26);
 
-    // Windows (slightly angled look)
+    // Glass
     ctx.fillStyle = "#9be5ff";
-    ctx.fillRect(r.x + 5, r.y + 13, r.width - 10, 7);                // windshield
-    ctx.fillRect(r.x + 5, r.y + r.height - 22, r.width - 10, 7);     // rear window
+    ctx.fillRect(r.x + 5, r.y + 15, r.width - 10, 7);               // windshield
+    ctx.fillRect(r.x + 5, r.y + r.height - 26, r.width - 10, 7);    // rear window
 
-    // Hood & trunk panels
+    // Hood & trunk
     ctx.fillStyle = "#16d75b";
-    ctx.fillRect(r.x + 4, r.y + 5, r.width - 8, 6);                  // hood
-    ctx.fillRect(r.x + 4, r.y + r.height - 11, r.width - 8, 6);      // trunk
+    ctx.fillRect(r.x + 4, r.y + 7, r.width - 8, 6);
+    ctx.fillRect(r.x + 4, r.y + r.height - 13, r.width - 8, 6);
 
-    // Center stripe
-    ctx.fillStyle = "#eafff2";
-    ctx.fillRect(r.x + r.width / 2 - 2, r.y + 6, 4, r.height - 12);
+    // Center racing stripe
+    ctx.fillStyle = "#f0fff5";
+    ctx.fillRect(r.x + r.width / 2 - 2, r.y + 7, 4, r.height - 14);
 
     // Headlights
     ctx.fillStyle = "#fffbd1";
-    ctx.fillRect(r.x + 4, r.y + 2, 4, 3);
-    ctx.fillRect(r.x + r.width - 8, r.y + 2, 4, 3);
+    ctx.fillRect(r.x + 4, r.y + 3, 4, 3);
+    ctx.fillRect(r.x + r.width - 8, r.y + 3, 4, 3);
 
     // Taillights
     ctx.fillStyle = "#ff4545";
@@ -380,71 +405,126 @@
 
     // Wheels
     ctx.fillStyle = "#000";
-    ctx.fillRect(r.x - 3, r.y + 8, 5, 13);
-    ctx.fillRect(r.x - 3, r.y + r.height - 21, 5, 13);
-    ctx.fillRect(r.x + r.width - 2, r.y + 8, 5, 13);
-    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 21, 5, 13);
+    ctx.fillRect(r.x - 3, r.y + 11, 5, 13);
+    ctx.fillRect(r.x - 3, r.y + r.height - 24, 5, 13);
+    ctx.fillRect(r.x + r.width - 2, r.y + 11, 5, 13);
+    ctx.fillRect(r.x + r.width - 2, r.y + r.height - 24, 5, 13);
 
-    // Little wheel highlights
+    // Small wheel highlights
     ctx.fillStyle = "#444";
-    ctx.fillRect(r.x - 2, r.y + 11, 3, 5);
-    ctx.fillRect(r.x - 2, r.y + r.height - 18, 3, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + 11, 3, 5);
-    ctx.fillRect(r.x + r.width - 1, r.y + r.height - 18, 3, 5);
+    ctx.fillRect(r.x - 2, r.y + 13, 3, 5);
+    ctx.fillRect(r.x - 2, r.y + r.height - 21, 3, 5);
+    ctx.fillRect(r.x + r.width - 1, r.y + 13, 3, 5);
+    ctx.fillRect(r.x + r.width - 1, r.y + r.height - 21, 3, 5);
   }
 
   function drawObstacles() {
     for (let o of obstacles) {
       const x = laneCenterX(o.lane, o.width);
-      let color = "#ff3344";
-      let label = "TAX";
 
-      if (o.type === "epa") {
-        color = "#ff8800";
-        label = "EPA";
-      } else if (o.type === "dot") {
-        color = "#4488ff";
-        label = "DOT";
-      } else if (o.type === "cbp") {
-        color = "#aa55ff";
-        label = "CBP";
-      } else if (o.type === "truck") {
-        color = "#bbbbbb";
-        label = "TRK";
+      if (o.type === "semi") {
+        // Semi truck sprite (cab + trailer)
+        const cabHeight = 22;
+        const trailerHeight = o.height - cabHeight;
+
+        // Trailer
+        ctx.fillStyle = "#999c9f";
+        ctx.fillRect(x, o.y, o.width, trailerHeight);
+        ctx.fillStyle = "#777a7f";
+        ctx.fillRect(x + 3, o.y + 4, o.width - 6, trailerHeight - 8);
+
+        // Rear doors detail
+        ctx.fillStyle = "#555";
+        ctx.fillRect(x + 4, o.y + trailerHeight - 8, o.width - 8, 4);
+
+        // Cab
+        ctx.fillStyle = "#44474d";
+        ctx.fillRect(x, o.y + trailerHeight, o.width, cabHeight);
+        ctx.fillStyle = "#2c2f35";
+        ctx.fillRect(x + 2, o.y + trailerHeight + 4, o.width - 4, cabHeight - 8);
+
+        // Windshield
+        ctx.fillStyle = "#9be5ff";
+        ctx.fillRect(x + 4, o.y + trailerHeight + 4, o.width - 8, 5);
+
+        // Headlights
+        ctx.fillStyle = "#fffbd1";
+        ctx.fillRect(x + 4, o.y + o.height - 3, 4, 2);
+        ctx.fillRect(x + o.width - 8, o.y + o.height - 3, 4, 2);
+      } else {
+        // Symbol-style hazard signs for TAX/EPA/DOT/CBP
+        const centerX = x + o.width / 2;
+        const centerY = o.y + o.height / 2;
+        const radius = Math.min(o.width, o.height) / 2;
+
+        // Base shape (rounded diamond)
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(Math.PI / 4); // diamond
+
+        let color = "#ff3344";
+        let label = "TAX";
+
+        if (o.type === "epa") {
+          color = "#ff8800";
+          label = "EPA";
+        } else if (o.type === "dot") {
+          color = "#4488ff";
+          label = "DOT";
+        } else if (o.type === "cbp") {
+          color = "#aa55ff";
+          label = "CBP";
+        }
+
+        ctx.fillStyle = color;
+        ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
+        ctx.restore();
+
+        // Label
+        ctx.fillStyle = "#000";
+        ctx.font = "9px monospace";
+        const textWidth = ctx.measureText(label).width;
+        ctx.fillText(label, centerX - textWidth / 2, centerY + 3);
       }
-
-      ctx.fillStyle = color;
-      ctx.fillRect(x, o.y, o.width, o.height);
-
-      ctx.fillStyle = "#000";
-      ctx.font = "10px monospace";
-      ctx.fillText(label, x + 2, o.y + 18);
     }
   }
 
   function drawPickups() {
     for (let p of pickups) {
       const x = laneCenterX(p.lane, p.width);
-      ctx.fillStyle = "#33ff66";
-      ctx.fillRect(x, p.y, p.width, p.height);
+      const cx = x + p.width / 2;
+      const cy = p.y + p.height / 2;
+      const r = p.width / 2;
+
+      // Coin style pickup
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = "#2bff7b";
+      ctx.fill();
+      ctx.strokeStyle = "#0e8536";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
       ctx.fillStyle = "#000";
-      ctx.font = "10px monospace";
-      ctx.fillText("25", x + 3, p.y + 15);
+      ctx.font = "9px monospace";
+      const text = "25";
+      const w = ctx.measureText(text).width;
+      ctx.fillText(text, cx - w / 2, cy + 3);
     }
   }
 
   function drawBillboards() {
-    ctx.font = "8px monospace";
     for (let b of billboards) {
       const poleWidth = 3;
-      const poleX =
+      const baseRoadEdge =
         b.side === "left"
-          ? shoulderWidth - poleWidth
+          ? shoulderWidth
           : shoulderWidth + roadWidth;
 
-      // Pole
+      // Two poles
       ctx.fillStyle = "#555";
-      ctx.fillRect(poleX, b.y + b.height, poleWidth, 24);
+      ctx.fillRect(baseRoadEdge - (b.side === "left" ? 5 : -2), b.y + b.height, poleWidth, 24);
+      ctx.fillRect(baseRoadEdge - (b.side === "left" ? 15 : -12), b.y + b.height, poleWidth, 24);
 
       // Board
       ctx.fillStyle = "#101010";
@@ -453,121 +533,35 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(b.x, b.y, b.width, b.height);
 
-      // Centered short text so it doesn't hang off
-      const text = b.text;
-      ctx.fillStyle = "#33ff66";
-      ctx.font = "8px monospace";
-      let textWidth = ctx.measureText(text).width;
-      let fontSize = 8;
+      // Top header bar
+      ctx.fillStyle = "#0b3519";
+      ctx.fillRect(b.x, b.y, b.width, 7);
 
-      // If still too wide, shrink font a bit
-      if (textWidth > b.width - 4) {
-        fontSize = 7;
+      // Little "lights"
+      ctx.fillStyle = "#e8ffe8";
+      ctx.fillRect(b.x + 4, b.y + 2, 3, 3);
+      ctx.fillRect(b.x + b.width - 7, b.y + 2, 3, 3);
+
+      // Centered text that fits
+      let text = b.text;
+      let fontSize = 8;
+      ctx.fillStyle = "#33ff66";
+      ctx.font = fontSize + "px monospace";
+      let w = ctx.measureText(text).width;
+
+      while (w > b.width - 6 && fontSize > 6) {
+        fontSize -= 1;
         ctx.font = fontSize + "px monospace";
-        textWidth = ctx.measureText(text).width;
+        w = ctx.measureText(text).width;
       }
 
-      const textX = b.x + (b.width - textWidth) / 2;
-      const textY = b.y + 14;
+      const textX = b.x + (b.width - w) / 2;
+      const textY = b.y + b.height / 2 + fontSize / 2 - 2;
       ctx.fillText(text, textX, textY);
     }
   }
 
   function gameOver() {
-    running = false;
-    const finalScore = Math.floor(score);
-    messageEl.textContent = "Seized at customs! Score: " + finalScore;
-    helpBtn.style.display = "inline-block";
-  }
-
-  // --- CONTROLS ---
-
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-      leftPressed = true;
-    } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-      rightPressed = true;
-    }
-  });
-
-  window.addEventListener("keyup", (e) => {
-    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-      leftPressed = false;
-    } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-      rightPressed = false;
-    }
-  });
-
-  function handleTapImpulse(clientX) {
-    // Simple discrete nudge per tap on mobile
-    const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const mid = rect.width / 2;
-    const nudge = laneWidth * 0.7;
-
-    if (x < mid) {
-      player.x -= nudge;
-    } else {
-      player.x += nudge;
-    }
-
-    const minX = shoulderWidth + 4;
-    const maxX = shoulderWidth + roadWidth - player.width - 4;
-    if (player.x < minX) player.x = minX;
-    if (player.x > maxX) player.x = maxX;
-  }
-
-  // Click: move lanes while running, restart if stopped
-  canvas.addEventListener("click", (e) => {
-    if (!running) {
-      resetGame();
-    } else {
-      handleTapImpulse(e.clientX);
-    }
-  });
-
-  canvas.addEventListener(
-    "touchstart",
-    (e) => {
-      const touch = e.touches[0];
-      if (!running) {
-        resetGame();
-      } else {
-        handleTapImpulse(touch.clientX);
-      }
-    },
-    { passive: true }
-  );
-
-  playBtn.addEventListener("click", () => {
-    resetGame();
-  });
-
-  helpBtn.addEventListener("click", () => {
-    const contact = document.getElementById("contact");
-    if (contact && contact.scrollIntoView) {
-      contact.scrollIntoView({ behavior: "smooth" });
-    } else {
-      window.location.hash = "#contact";
-    }
-  });
-
-  // --- RESPONSIVE CANVAS SIZING (no transform overlay issues) ---
-
-  function resizeCanvas() {
-    const maxWidth = Math.min(window.innerWidth - 40, 360);
-    const width = Math.max(220, maxWidth);
-    const aspect = canvas.height / canvas.width;
-    canvas.style.width = width + "px";
-    canvas.style.height = width * aspect + "px";
-  }
-
-  window.addEventListener("resize", resizeCanvas);
-  resizeCanvas();
-
-  // Start a round immediately
-  resetGame();
-})();
-
+    running
 
 
