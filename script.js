@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – sprite version (lights + bounce + tight hitbox, v2) ===
+// === ESPEC IMPORT RUN – sprite version (lights + bounce + tight hitbox, v3) ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -354,45 +354,24 @@
     ctx.fillStyle = "#050609";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Shoulders / verge (slightly greenish asphalt + guardrails)
-    ctx.fillStyle = "#171c16";
+    // Shoulders: patchy roadside ground
+    ctx.fillStyle = "#151a12";
     ctx.fillRect(0, 0, shoulderWidth, canvas.height);
     ctx.fillRect(canvas.width - shoulderWidth, 0, shoulderWidth, canvas.height);
 
-    // Guardrail beams
-    ctx.fillStyle = "#444a4f";
-    ctx.fillRect(6, 10, shoulderWidth - 12, 6);
-    ctx.fillRect(6, canvas.height - 16, shoulderWidth - 12, 6);
-    ctx.fillRect(
-      canvas.width - shoulderWidth + 6,
-      10,
-      shoulderWidth - 12,
-      6
-    );
-    ctx.fillRect(
-      canvas.width - shoulderWidth + 6,
-      canvas.height - 16,
-      shoulderWidth - 12,
-      6
-    );
+    // Spotted ground / bushes (no more equal-sign repetition)
+    for (let y = 0; y < canvas.height; y += 32) {
+      ctx.fillStyle = "#1d2418";
+      ctx.fillRect(4, y + 6, 12, 9);
+      ctx.fillRect(canvas.width - 16, y + 20, 12, 9);
 
-    // Guardrail posts
-    ctx.fillStyle = "#2c3136";
-    for (let y = 0; y < canvas.height; y += 30) {
-      ctx.fillRect(10, y + 6, 4, 20);
-      ctx.fillRect(shoulderWidth - 14, y + 6, 4, 20);
-      ctx.fillRect(canvas.width - shoulderWidth + 10, y + 6, 4, 20);
-      ctx.fillRect(canvas.width - 14, y + 6, 4, 20);
-    }
+      ctx.fillStyle = "#212a1c";
+      ctx.fillRect(10, y + 18, 10, 7);
+      ctx.fillRect(canvas.width - 22, y + 2, 10, 7);
 
-    // Tiny roadside foliage blocks
-    for (let y = 10; y < canvas.height; y += 40) {
-      ctx.fillStyle = "#20291c";
-      ctx.fillRect(3, y, 8, 12);
-      ctx.fillRect(canvas.width - 11, y + 20, 8, 12);
-      ctx.fillStyle = "#27331f";
-      ctx.fillRect(4, y + 2, 6, 8);
-      ctx.fillRect(canvas.width - 10, y + 22, 6, 8);
+      ctx.fillStyle = "#11160f";
+      ctx.fillRect(2, y + 26, 8, 5);
+      ctx.fillRect(canvas.width - 11, y + 10, 8, 5);
     }
 
     // Road base gradient
@@ -456,11 +435,11 @@
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
 
-    // === LIGHT POLES & BEAMS (cleaner, orangey, no huge discs) ===
+    // === LIGHT POLES & BEAMS (moved further out, cleaner) ===
     const lightSpacing = 170;
     const offset = roadScroll % lightSpacing;
-    const leftPoleBaseX = shoulderWidth - 6;
-    const rightPoleBaseX = shoulderWidth + roadWidth + 2;
+    const leftPoleBaseX = shoulderWidth - 14;                // further left
+    const rightPoleBaseX = shoulderWidth + roadWidth + 11;   // further right
 
     for (let y = -lightSpacing + offset; y < canvas.height + lightSpacing; y += lightSpacing) {
       // Poles
@@ -468,57 +447,56 @@
       ctx.fillRect(leftPoleBaseX, y - 26, 3, 26);
       ctx.fillRect(rightPoleBaseX, y - 26, 3, 26);
 
-      // Arms
-      ctx.fillRect(leftPoleBaseX + 3, y - 26, 16, 3);
-      ctx.fillRect(rightPoleBaseX - 19, y - 26, 16, 3);
+      // Arms (reach slightly onto road)
+      ctx.fillRect(leftPoleBaseX + 3, y - 26, 18, 3);
+      ctx.fillRect(rightPoleBaseX - 21, y - 26, 18, 3);
 
       // Light heads
       ctx.fillStyle = "#fbd27a";
-      ctx.fillRect(leftPoleBaseX + 18, y - 29, 5, 5);
-      ctx.fillRect(rightPoleBaseX - 23, y - 29, 5, 5);
+      ctx.fillRect(leftPoleBaseX + 19, y - 29, 5, 5);
+      ctx.fillRect(rightPoleBaseX - 24, y - 29, 5, 5);
 
       // Conical beams
       ctx.fillStyle = "rgba(255, 210, 120, 0.22)";
 
       ctx.beginPath();
-      ctx.moveTo(leftPoleBaseX + 20, y - 24);
+      ctx.moveTo(leftPoleBaseX + 22, y - 24);
       ctx.lineTo(leftPoleBaseX + 40, y - 12);
-      ctx.lineTo(shoulderWidth + 40, y + 40);
-      ctx.lineTo(shoulderWidth + 15, y + 40);
+      ctx.lineTo(shoulderWidth + 35, y + 38);
+      ctx.lineTo(shoulderWidth + 15, y + 38);
       ctx.closePath();
       ctx.fill();
 
       ctx.beginPath();
-      ctx.moveTo(rightPoleBaseX - 20, y - 24);
+      ctx.moveTo(rightPoleBaseX - 22, y - 24);
       ctx.lineTo(rightPoleBaseX - 40, y - 12);
-      ctx.lineTo(shoulderWidth + roadWidth - 15, y + 40);
-      ctx.lineTo(shoulderWidth + roadWidth - 40, y + 40);
+      ctx.lineTo(shoulderWidth + roadWidth - 15, y + 38);
+      ctx.lineTo(shoulderWidth + roadWidth - 35, y + 38);
       ctx.closePath();
       ctx.fill();
 
-      // Soft oval hotspot just inside the lane edge
-      const rX = 24;
+      // Soft oval hotspots just at lane edge
+      const rX = 22;
       const rY = 7;
 
       ctx.save();
-      ctx.translate(shoulderWidth + 46, y + 42);
-      ctx.beginPath();
-      ctx.scale(1, 1);
-      const gradL = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
+      ctx.translate(shoulderWidth + 42, y + 40);
+      let gradL = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
       gradL.addColorStop(0, "rgba(255, 215, 140, 0.5)");
       gradL.addColorStop(0.6, "rgba(255, 215, 140, 0.18)");
-      gradL.addColorStop(1, "rgba(0,0,0,0.35)");
+      gradL.addColorStop(1, "rgba(0,0,0,0.30)");
       ctx.fillStyle = gradL;
+      ctx.beginPath();
       ctx.ellipse(0, 0, rX, rY, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
       ctx.save();
-      ctx.translate(shoulderWidth + roadWidth - 46, y + 42);
-      const gradR = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
+      ctx.translate(shoulderWidth + roadWidth - 42, y + 40);
+      let gradR = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
       gradR.addColorStop(0, "rgba(255, 215, 140, 0.5)");
       gradR.addColorStop(0.6, "rgba(255, 215, 140, 0.18)");
-      gradR.addColorStop(1, "rgba(0,0,0,0.35)");
+      gradR.addColorStop(1, "rgba(0,0,0,0.30)");
       ctx.fillStyle = gradR;
       ctx.beginPath();
       ctx.ellipse(0, 0, rX, rY, 0, 0, Math.PI * 2);
@@ -531,11 +509,11 @@
     const bounce = Math.sin(bounceTime * 0.008) * 2.5;
     const displayY = r.y + bounce;
 
-    // soft oval shadow (no rectangle)
+    // soft oval shadow under whole car
     const shadowCx = r.x + r.width / 2;
-    const shadowCy = displayY + r.height - 6;
-    const shadowRx = r.width * 0.3;
-    const shadowRy = 4;
+    const shadowCy = displayY + r.height * 0.55;
+    const shadowRx = r.width * 0.36;
+    const shadowRy = 5;
 
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.45)";
