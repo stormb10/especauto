@@ -435,56 +435,62 @@
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
 
-    // === LIGHT POLES & BEAMS (moved further out, cleaner) ===
-    const lightSpacing = 170;
+     // === LIGHT POLES & BEAMS (simple + tidy) ===
+    const lightSpacing = 180;
     const offset = roadScroll % lightSpacing;
-    const leftPoleBaseX = shoulderWidth - 14;                // further left
-    const rightPoleBaseX = shoulderWidth + roadWidth + 11;   // further right
 
-    for (let y = -lightSpacing + offset; y < canvas.height + lightSpacing; y += lightSpacing) {
+    // Poles sit in the shoulders, not overlapping the road
+    const leftPoleBaseX = shoulderWidth - 8;
+    const rightPoleBaseX = shoulderWidth + roadWidth + 5;
+
+    for (
+      let y = -lightSpacing + offset;
+      y < canvas.height + lightSpacing;
+      y += lightSpacing
+    ) {
       // Poles
       ctx.fillStyle = "#4a4f55";
-      ctx.fillRect(leftPoleBaseX, y - 26, 3, 26);
-      ctx.fillRect(rightPoleBaseX, y - 26, 3, 26);
+      ctx.fillRect(leftPoleBaseX, y - 28, 3, 28);
+      ctx.fillRect(rightPoleBaseX, y - 28, 3, 28);
 
-      // Arms (reach slightly onto road)
-      ctx.fillRect(leftPoleBaseX + 3, y - 26, 18, 3);
-      ctx.fillRect(rightPoleBaseX - 21, y - 26, 18, 3);
+      // Arms
+      ctx.fillRect(leftPoleBaseX + 3, y - 28, 14, 3);
+      ctx.fillRect(rightPoleBaseX - 17, y - 28, 14, 3);
 
       // Light heads
       ctx.fillStyle = "#fbd27a";
-      ctx.fillRect(leftPoleBaseX + 19, y - 29, 5, 5);
-      ctx.fillRect(rightPoleBaseX - 24, y - 29, 5, 5);
+      ctx.fillRect(leftPoleBaseX + 15, y - 31, 5, 5);
+      ctx.fillRect(rightPoleBaseX - 20, y - 31, 5, 5);
 
-      // Conical beams
-      ctx.fillStyle = "rgba(255, 210, 120, 0.22)";
+      // Narrow triangular beams
+      ctx.fillStyle = "rgba(255, 210, 120, 0.2)";
 
+      // Left beam
       ctx.beginPath();
-      ctx.moveTo(leftPoleBaseX + 22, y - 24);
-      ctx.lineTo(leftPoleBaseX + 40, y - 12);
-      ctx.lineTo(shoulderWidth + 35, y + 38);
-      ctx.lineTo(shoulderWidth + 15, y + 38);
+      ctx.moveTo(leftPoleBaseX + 17, y - 26);                      // at light head
+      ctx.lineTo(shoulderWidth + 6, y + 12);                        // inner edge near road
+      ctx.lineTo(shoulderWidth + 18, y + 22);                       // slightly further in
       ctx.closePath();
       ctx.fill();
 
+      // Right beam
       ctx.beginPath();
-      ctx.moveTo(rightPoleBaseX - 22, y - 24);
-      ctx.lineTo(rightPoleBaseX - 40, y - 12);
-      ctx.lineTo(shoulderWidth + roadWidth - 15, y + 38);
-      ctx.lineTo(shoulderWidth + roadWidth - 35, y + 38);
+      ctx.moveTo(rightPoleBaseX - 17, y - 26);
+      ctx.lineTo(shoulderWidth + roadWidth - 6, y + 12);
+      ctx.lineTo(shoulderWidth + roadWidth - 18, y + 22);
       ctx.closePath();
       ctx.fill();
 
-      // Soft oval hotspots just at lane edge
-      const rX = 22;
-      const rY = 7;
+      // Small oval hotspot at edge of road
+      const rX = 16;
+      const rY = 5;
 
       ctx.save();
-      ctx.translate(shoulderWidth + 42, y + 40);
+      ctx.translate(shoulderWidth + 18, y + 24);
       let gradL = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
-      gradL.addColorStop(0, "rgba(255, 215, 140, 0.5)");
-      gradL.addColorStop(0.6, "rgba(255, 215, 140, 0.18)");
-      gradL.addColorStop(1, "rgba(0,0,0,0.30)");
+      gradL.addColorStop(0, "rgba(255, 215, 140, 0.55)");
+      gradL.addColorStop(0.6, "rgba(255, 215, 140, 0.2)");
+      gradL.addColorStop(1, "rgba(0,0,0,0.3)");
       ctx.fillStyle = gradL;
       ctx.beginPath();
       ctx.ellipse(0, 0, rX, rY, 0, 0, Math.PI * 2);
@@ -492,18 +498,18 @@
       ctx.restore();
 
       ctx.save();
-      ctx.translate(shoulderWidth + roadWidth - 42, y + 40);
+      ctx.translate(shoulderWidth + roadWidth - 18, y + 24);
       let gradR = ctx.createRadialGradient(0, 0, 0, 0, 0, rX);
-      gradR.addColorStop(0, "rgba(255, 215, 140, 0.5)");
-      gradR.addColorStop(0.6, "rgba(255, 215, 140, 0.18)");
-      gradR.addColorStop(1, "rgba(0,0,0,0.30)");
+      gradR.addColorStop(0, "rgba(255, 215, 140, 0.55)");
+      gradR.addColorStop(0.6, "rgba(255, 215, 140, 0.2)");
+      gradR.addColorStop(1, "rgba(0,0,0,0.3)");
       ctx.fillStyle = gradR;
       ctx.beginPath();
       ctx.ellipse(0, 0, rX, rY, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
-  }
+
 
   function drawPlayer(r) {
     const bounce = Math.sin(bounceTime * 0.008) * 2.5;
