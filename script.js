@@ -219,12 +219,12 @@
 
     const boardWidth = 45;
     const boardHeight = 65;
-    const overhang = 50;
+    const overhang = 40;
 
     const x =
       side === "left"
         ? -overhang
-        : canvas.width - boardWidth + overhang - 12;
+        : canvas.width - boardWidth + overhang - 6;
 
     billboards.push({
       side,
