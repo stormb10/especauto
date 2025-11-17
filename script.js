@@ -224,7 +224,7 @@
     const x =
       side === "left"
         ? -overhang
-        : canvas.width - boardWidth + overhang - 10;
+        : canvas.width - boardWidth + overhang - 12;
 
     billboards.push({
       side,
