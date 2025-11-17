@@ -219,7 +219,7 @@
 
     const boardWidth = 45;
     const boardHeight = 65;
-    const overhang = 40;
+    const overhang = 60;
 
     const x =
       side === "left"
