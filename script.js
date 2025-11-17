@@ -51,7 +51,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
-// === ESPEC IMPORT RUN – sprite version (lights + bounce + tight hitbox, v3) ===
+// === ESPEC IMPORT RUN – sprite version (lights cleaned up) ===
 (function () {
   const canvas = document.getElementById("importRunCanvas");
   const scoreEl = document.getElementById("importRunScore");
@@ -59,31 +59,29 @@
   const playBtn = document.getElementById("importRunPlay");
   const helpBtn = document.getElementById("importRunHelp");
 
+  // If this page doesn’t have the game section, bail.
   if (!canvas || !scoreEl || !messageEl || !playBtn || !helpBtn) return;
 
   const ctx = canvas.getContext("2d");
 
   // --- SPRITES --------------------------------------------------------
-
   const carImg = new Image();
-  carImg.src = "assets/car.png";
+  carImg.src = "assets/car.png"; // make sure car.png is in /assets
 
   const billboardImgs = [];
   for (let i = 1; i <= 4; i++) {
     const img = new Image();
-    img.src = "assets/billboard" + i + ".png";
+    img.src = "assets/billboard" + i + ".png"; // billboard1-4.png in /assets
     billboardImgs.push(img);
   }
 
   // --- ROAD GEOMETRY --------------------------------------------------
-
   const laneCount = 3;
   const shoulderWidth = 30;
   const roadWidth = canvas.width - shoulderWidth * 2;
   const laneWidth = roadWidth / laneCount;
 
   // --- PLAYER CAR -----------------------------------------------------
-
   const player = {
     x: 0,
     y: 0,
@@ -107,7 +105,6 @@
   };
 
   // --- GAME STATE -----------------------------------------------------
-
   let obstacles = [];
   let pickups = [];
   let billboards = [];
@@ -123,7 +120,6 @@
   let lastPlayerRect = null;
 
   // --- HELPERS --------------------------------------------------------
-
   function laneCenterX(laneIndex, objWidth) {
     const laneStart = shoulderWidth + laneIndex * laneWidth;
     return laneStart + (laneWidth - objWidth) / 2;
@@ -156,7 +152,6 @@
   }
 
   // --- GAME FLOW ------------------------------------------------------
-
   function resetGame() {
     obstacles = [];
     pickups = [];
@@ -174,7 +169,8 @@
 
     running = true;
     lastTime = performance.now();
-    messageEl.textContent = "Avoid TAX / EPA / DOT / CBP, grab the green 25s!";
+    messageEl.textContent =
+      "Avoid TAX / EPA / DOT / CBP, grab the green 25s!";
     updateScore(0);
     playBtn.textContent = "Play again";
     helpBtn.style.display = "none";
@@ -338,7 +334,6 @@
   }
 
   // --- DRAWING --------------------------------------------------------
-
   function drawScene(playerRect) {
     drawRoad();
     drawObstacles();
@@ -350,16 +345,16 @@
   function drawRoad() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Background
+    // Page background
     ctx.fillStyle = "#050609";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Shoulders: patchy roadside ground
+    // Shoulders
     ctx.fillStyle = "#151a12";
     ctx.fillRect(0, 0, shoulderWidth, canvas.height);
     ctx.fillRect(canvas.width - shoulderWidth, 0, shoulderWidth, canvas.height);
 
-    // Spotted ground / bushes (no more equal-sign repetition)
+    // Rough ground / bushes on shoulders
     for (let y = 0; y < canvas.height; y += 32) {
       ctx.fillStyle = "#1d2418";
       ctx.fillRect(4, y + 6, 12, 9);
@@ -374,7 +369,7 @@
       ctx.fillRect(canvas.width - 11, y + 10, 8, 5);
     }
 
-    // Road base gradient
+    // Road gradient
     const roadGradient = ctx.createLinearGradient(
       shoulderWidth,
       0,
@@ -414,13 +409,13 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Road bands (movement)
+    // Horizontal bands (movement)
     ctx.fillStyle = "rgba(255,255,255,0.02)";
     for (let y = -roadScroll; y < canvas.height; y += 26) {
       ctx.fillRect(shoulderWidth, y, roadWidth, 2);
     }
 
-    // Yellow lane lines (scrolling)
+    // Yellow lane lines
     ctx.strokeStyle = "#ffd65f";
     ctx.lineWidth = 2;
     ctx.setLineDash([10, 10]);
@@ -435,11 +430,9 @@
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
 
-     // === LIGHT POLES & BEAMS (simple + tidy) ===
+    // === LIGHT POLES & BEAMS (simple + tidy) ===
     const lightSpacing = 180;
     const offset = roadScroll % lightSpacing;
-
-    // Poles sit in the shoulders, not overlapping the road
     const leftPoleBaseX = shoulderWidth - 8;
     const rightPoleBaseX = shoulderWidth + roadWidth + 5;
 
@@ -467,9 +460,9 @@
 
       // Left beam
       ctx.beginPath();
-      ctx.moveTo(leftPoleBaseX + 17, y - 26);                      // at light head
-      ctx.lineTo(shoulderWidth + 6, y + 12);                        // inner edge near road
-      ctx.lineTo(shoulderWidth + 18, y + 22);                       // slightly further in
+      ctx.moveTo(leftPoleBaseX + 17, y - 26);
+      ctx.lineTo(shoulderWidth + 6, y + 12);
+      ctx.lineTo(shoulderWidth + 18, y + 22);
       ctx.closePath();
       ctx.fill();
 
@@ -509,13 +502,13 @@
       ctx.fill();
       ctx.restore();
     }
-
+  }
 
   function drawPlayer(r) {
     const bounce = Math.sin(bounceTime * 0.008) * 2.5;
     const displayY = r.y + bounce;
 
-    // soft oval shadow under whole car
+    // Soft oval shadow under whole car
     const shadowCx = r.x + r.width / 2;
     const shadowCy = displayY + r.height * 0.55;
     const shadowRx = r.width * 0.36;
@@ -687,7 +680,6 @@
   }
 
   // --- CONTROLS -------------------------------------------------------
-
   window.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
       leftPressed = true;
@@ -745,8 +737,7 @@
     }
   });
 
-  // --- RESPONSIVE CANVAS SIZING ---------------------------------------
-
+  // --- RESPONSIVE CANVAS SIZING --------------------------------------
   function resizeCanvas() {
     const maxWidth = Math.min(window.innerWidth - 40, 360);
     const width = Math.max(220, maxWidth);
@@ -758,5 +749,6 @@
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
+  // Kick off
   resetGame();
 })();
