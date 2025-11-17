@@ -217,9 +217,9 @@
     const side = Math.random() < 0.5 ? "left" : "right";
     const imgIndex = Math.floor(Math.random() * billboardImgs.length);
 
-    const boardWidth = 75;
-    const boardHeight = 90;
-    const overhang = 35;
+    const boardWidth = 45;
+    const boardHeight = 65;
+    const overhang = 50;
 
     const x =
       side === "left"
