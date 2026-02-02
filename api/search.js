@@ -189,12 +189,17 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({
-      query: q,
-      filters: { eligible, soonMonths, limit },
-      results: out,
-      fetched_at: new Date().toISOString()
-    });
+ return res.status(200).json({
+  query: q,
+  filters: { eligible, soonMonths, limit },
+  results: out,
+  debug: {
+    braveCount: resultsRaw.length,
+    braveSample: resultsRaw.slice(0, 3).map(r => ({ title: r.title, url: r.url }))
+  },
+  fetched_at: new Date().toISOString()
+});
+
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: "Server error" });
