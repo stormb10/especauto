@@ -167,11 +167,11 @@ const query = `${q} ${listingHints} ${sourceQuery} ${excludeDirs}`;
 
       if (!url) continue;
      
-// --- ONLY keep real listing pages (not category/search pages) ---
 const domain = new URL(url).hostname.replace(/^www\./, "");
 
-// mobile.de: keep ONLY actual vehicle detail pages
-if (domain === "mobile.de") {
+// mobile.de + suchen.mobile.de:
+// Keep ONLY actual vehicle detail pages, drop category/search pages.
+if (domain === "mobile.de" || domain === "suchen.mobile.de") {
   const isListing =
     url.includes("details.html") ||
     url.includes("fahrzeuge/details") ||
@@ -179,6 +179,7 @@ if (domain === "mobile.de") {
 
   if (!isListing) continue;
 }
+
 
 // leboncoin.fr: drop category pages
 if (domain === "leboncoin.fr") {
