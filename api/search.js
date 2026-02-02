@@ -166,29 +166,24 @@ const query = `${q} ${listingHints} ${sourceQuery} ${excludeDirs}`;
       const desc = r.description || "";
 
       if (!url) continue;
-      // Reject obvious directory / brand pages (not actual car listings)
-const rejectPatterns = [
-  "suchen.mobile.de",
-  "/auto/",
-  "/marke/",
-  "/modell/",
-  "/vhc:",
-  "/ro/automobil/", // keep: this can be listings too, but mobile.de uses it for category; we'll refine
-];
-const rejectExact = [
-  "https://suchen.mobile.de/",
-  "https://www.mobile.de/auto/",
-];
+     
+// --- ONLY keep real listing pages (not category/search pages) ---
+const domain = new URL(url).hostname.replace(/^www\./, "");
 
-const isDirectory =
-  url.includes("suchen.mobile.de") ||
-  url.includes("/auto/") ||
-  url.includes("/marke/") ||
-  url.includes("/modell/") ||
-  url.includes("mobile.de/auto/") ||
-  url.includes("mobile.de/marke/");
+// mobile.de: keep ONLY actual vehicle detail pages
+if (domain === "mobile.de") {
+  const isListing =
+    url.includes("details.html") ||
+    url.includes("fahrzeuge/details") ||
+    url.includes("id=");
 
-if (isDirectory) continue;
+  if (!isListing) continue;
+}
+
+// leboncoin.fr: drop category pages
+if (domain === "leboncoin.fr") {
+  if (url.includes("/ck/")) continue;
+}
 
 
       const year = inferYear(title + " " + desc);
