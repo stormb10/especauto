@@ -9,11 +9,11 @@
   const sub = document.querySelector(".hero-sub");
   const cta = document.querySelector(".cta");
 
-  // Always set footer year if present (works on every page)
+  // Footer year (safe on all pages)
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // If we're not on the homepage hero, bail so we don't crash other pages
+  // If not on homepage hero, exit early
   if (!header || !overlay || !hero || !title || !sub || !cta) return;
 
   function clamp(v, min, max) {
@@ -23,38 +23,27 @@
   function onScroll() {
     const heroH = hero.offsetHeight;
     const vh = window.innerHeight;
-
     const progress = clamp(window.scrollY / Math.max(1, heroH - vh), 0, 1);
 
     if (progress > 0.08) document.body.classList.add("header-on");
     else document.body.classList.remove("header-on");
 
-    const minO = 0.0,
-      maxO = 0.45;
-    const o = clamp(minO + progress * (maxO - minO), minO, maxO);
-    overlay.style.opacity = o.toFixed(3);
+    overlay.style.opacity = (0.45 * progress).toFixed(3);
 
     const start = 0.08,
       end = 0.35;
     const t = clamp((progress - start) / (end - start), 0, 1);
     const easing = t * (2 - t);
-    const opacity = easing;
-    const translate = (1 - easing) * 14;
 
     [title, sub, cta].forEach((el) => {
-      el.style.opacity = opacity.toFixed(3);
-      el.style.transform = `translateY(${translate.toFixed(1)}px)`;
+      el.style.opacity = easing.toFixed(3);
+      el.style.transform = `translateY(${(1 - easing) * 14}px)`;
     });
   }
 
   document.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("load", onScroll);
   window.addEventListener("resize", onScroll);
-})();
-
-
-  // Footer year
-  document.getElementById('year').textContent = new Date().getFullYear();
 })();
 
 // === ESPEC IMPORT RUN – sprite version (lights cleaned up) ===
