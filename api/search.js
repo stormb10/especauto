@@ -127,18 +127,18 @@ export default async function handler(req, res) {
     if (!q) return res.status(400).json({ error: "Missing q" });
 
 // --- Source + listing URL hints ---
-// We are specifically trying to pull *individual listing pages*.
+// --- Source + listing page hints (LOOSE version) ---
 const sourceQuery =
   `site:mobile.de OR site:autoscout24 OR site:marktplaats.nl OR site:leboncoin.fr OR site:subito.it OR site:autotrader.co.uk`;
 
-// Listing page URL patterns / words that tend to appear on real ads
-const listingUrlHints = `("details.html?id=" OR "fahrzeuge/details" OR "Anzeige" OR "ad id" OR "ref:" OR "immatriculation" OR "kenteken")`;
+// Use plain tokens (NO quotes, NO OR blocks) so Brave doesn't return 0.
+const listingHints = `details.html fahrzeuge Anzeige € km`;
 
-// Pricing/mileage hints also help avoid brand pages
-const listingValueHints = `("€" OR "EUR" OR "km" OR "miles")`;
+// Exclude known directory host
+const excludeDirs = `-suchen.mobile.de -/marke/ -/modell/`;
 
-// Exclude known directory hosts/pages
-const excludeDirs = `-suchen.mobile.de -/marke/ -/modell/ -/auto/`;
+const query = `${q} ${listingHints} ${sourceQuery} ${excludeDirs}`;
+
 
 // Final query
 const query = `${q} ${listingUrlHints} ${listingValueHints} ${sourceQuery} ${excludeDirs}`;
