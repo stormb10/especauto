@@ -112,6 +112,8 @@ function inferPrice(text) {
   return Number.isFinite(n) ? n : null;
 }
 
+let lastBraveCallAt = 0;
+
 export default async function handler(req, res) {
   try {
     const apiKey = process.env.BRAVE_SEARCH_API_KEY;
@@ -139,10 +141,11 @@ const excludeDirs = `-suchen.mobile.de -/marke/ -/modell/`;
 
 const query = `${q} ${listingHints} ${sourceQuery} ${excludeDirs}`;
 
-
-// Final query
-const query = `${q} ${listingUrlHints} ${listingValueHints} ${sourceQuery} ${excludeDirs}`;
-
+    // Free plan is 1 req/sec — simple throttle to avoid 429 during testing
+const now = Date.now();
+const waitMs = Math.max(0, 1100 - (now - lastBraveCallAt));
+if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+lastBraveCallAt = Date.now();
 
 
     const braveUrl = new URL("https://api.search.brave.com/res/v1/web/search");
