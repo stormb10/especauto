@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ESpec — Import-Eligible Search</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="search-page">
+  <!-- Header (reuse your existing header styles if present) -->
+  <header class="site-header header-on">
+    <div class="header-inner">
+      <a class="brand" href="index.html">ESpec</a>
+      <nav class="nav">
+        <a href="index.html#about">About</a>
+        <a href="index.html#how">How it works</a>
+        <a href="search.html" class="active">Search</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="search-wrap">
+    <section class="search-hero">
+      <h1>Search Import-Eligible Euro Listings</h1>
+      <p class="muted">Photo-forward results across Europe. Click a car for eligibility details, then jump to the source listing.</p>
+    </section>
+
+    <section class="search-controls">
+      <input id="q" class="search-input" type="text" placeholder="Search BMW E30, 190E, Defender…" />
+
+      <div class="pill-row">
+        <button class="pill active" data-eligible="now">Eligible now</button>
+        <button class="pill" data-eligible="soon">Eligible soon</button>
+        <button class="pill" data-eligible="uncertain">Include uncertain</button>
+        <button class="pill" data-eligible="all">All (no not-eligible)</button>
+      </div>
+
+      <div class="row">
+        <label class="label">
+          Soon window
+          <select id="soonMonths" class="select">
+            <option value="6">6 mo</option>
+            <option value="12" selected>12 mo</option>
+            <option value="18">18 mo</option>
+            <option value="24">24 mo</option>
+            <option value="36">36 mo</option>
+          </select>
+        </label>
+
+        <button id="searchBtn" class="btn primary">Search</button>
+      </div>
+
+      <div class="small muted" id="status"></div>
+    </section>
+
+    <section class="search-layout">
+      <!-- Photo grid -->
+      <div>
+        <div id="grid" class="card-grid"></div>
+      </div>
+
+      <!-- Detail panel -->
+      <aside class="detail-panel" id="panel">
+        <div class="panel-empty muted">Click a car to see eligibility + details.</div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    window.__ESPEC_SEARCH__ && window.__ESPEC_SEARCH__();
+  </script>
+</body>
+</html>
