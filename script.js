@@ -752,3 +752,186 @@
   // Kick off
   resetGame();
 })();
+// ================================
+// ESpec Import-Eligible Search (V1)
+// Static frontend + Vercel /api
+// ================================
+window.__ESPEC_SEARCH__ = function () {
+  const qEl = document.getElementById("q");
+  const soonEl = document.getElementById("soonMonths");
+  const btn = document.getElementById("searchBtn");
+  const grid = document.getElementById("grid");
+  const panel = document.getElementById("panel");
+  const status = document.getElementById("status");
+  const pillButtons = document.querySelectorAll(".pill[data-eligible]");
+
+  if (!qEl || !soonEl || !btn || !grid || !panel || !status) return;
+
+  let eligible = "now";
+
+  function setEligible(val) {
+    eligible = val;
+    pillButtons.forEach(b => b.classList.toggle("active", b.dataset.eligible === val));
+  }
+
+  pillButtons.forEach(b => {
+    b.addEventListener("click", () => {
+      setEligible(b.dataset.eligible);
+    });
+  });
+
+  function fmtEligiblePill(r) {
+    if (r.eligibility_status === "eligible_now") return "Eligible now";
+    if (r.eligibility_status === "eligible_soon") {
+      if (!r.eligible_on) return "Eligible soon";
+      const d = new Date(r.eligible_on);
+      return "Eligible " + d.toLocaleString("en-US", { month: "short", year: "numeric" });
+    }
+    if (r.eligibility_status === "uncertain") return "Uncertain";
+    return "Not eligible";
+  }
+
+  function fmtPrice(r) {
+    if (!r.price_value) return "";
+    const cur = r.price_currency || "EUR";
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(r.price_value);
+    } catch {
+      return `${cur} ${r.price_value}`;
+    }
+  }
+
+  function placeholderImg() {
+    // You can swap this to a local asset later, e.g. assets/placeholder.jpg
+    return null;
+  }
+
+  function renderPanel(r) {
+    const img = r.image_url || placeholderImg();
+
+    panel.innerHTML = `
+      <div class="panel-hero">
+        ${img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(r.title_normalized || r.title_raw)}" referrerpolicy="no-referrer" />` : ``}
+      </div>
+      <div class="panel-body">
+        <h2 class="panel-title">${escapeHtml(r.title_normalized || r.title_raw)}</h2>
+        <div class="panel-meta">
+          Source: <strong>${escapeHtml(r.source_domain)}</strong>
+          ${r.location_raw ? ` • ${escapeHtml(r.location_raw)}` : ``}
+          ${r.price_value ? ` • ${escapeHtml(fmtPrice(r))}` : ``}
+        </div>
+
+        <div class="box">
+          <div class="label">Eligibility</div>
+          <div class="text">${escapeHtml(r.eligibility_reason || "")}</div>
+          <div class="text" style="margin-top:6px; font-size:12px; opacity:.75;">
+            Status: ${escapeHtml(fmtEligiblePill(r))} • Confidence: ${escapeHtml(r.confidence || "low")}
+          </div>
+        </div>
+
+        <div class="panel-actions">
+          <a class="primary" href="${escapeHtml(r.source_url)}" target="_blank" rel="noreferrer">View on source site</a>
+          <a href="index.html#contact">Ask ESpec to verify</a>
+        </div>
+
+        ${r.snippet ? `<div class="panel-snippet">${escapeHtml(r.snippet)}</div>` : ``}
+      </div>
+    `;
+  }
+
+  function renderGrid(results) {
+    grid.innerHTML = "";
+    if (!results || !results.length) {
+      grid.innerHTML = `<div class="muted">No results found. Try a different query.</div>`;
+      return;
+    }
+
+    results.forEach(r => {
+      const card = document.createElement("div");
+      card.className = "listing-card";
+
+      const img = r.image_url || placeholderImg();
+      const priceLine = fmtPrice(r);
+
+      card.innerHTML = `
+        <div class="card-media">
+          ${img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(r.title_normalized || r.title_raw)}" loading="lazy" referrerpolicy="no-referrer" />`
+               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,.55);font-size:13px;">Image unavailable</div>`}
+
+          <div class="badge-row">
+            <span class="badge">${escapeHtml(fmtEligiblePill(r))}</span>
+          </div>
+          <span class="badge source">${escapeHtml(r.source_domain)}</span>
+
+          <div class="card-overlay">
+            <div class="card-title">${escapeHtml(r.title_normalized || r.title_raw)}</div>
+            ${priceLine ? `<div class="card-price">${escapeHtml(priceLine)}</div>` : ``}
+          </div>
+        </div>
+      `;
+
+      // Click opens detail panel
+      card.addEventListener("click", () => renderPanel(r));
+
+      grid.appendChild(card);
+    });
+
+    // Auto-open first result to make page feel alive
+    renderPanel(results[0]);
+  }
+
+  async function runSearch() {
+    const q = (qEl.value || "").trim();
+    const soonMonths = soonEl.value;
+
+    if (!q) {
+      status.textContent = "Type a search first (example: BMW E30 Touring).";
+      return;
+    }
+
+    status.textContent = "Searching…";
+    btn.disabled = true;
+
+    try {
+      const url = `/api/search?q=${encodeURIComponent(q)}&eligible=${encodeURIComponent(eligible)}&soonMonths=${encodeURIComponent(soonMonths)}&limit=24`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        status.textContent = "Search error. Check /api/search response.";
+        console.error(data);
+        return;
+      }
+
+      status.textContent = `Showing ${data.results.length} results • ${new Date(data.fetched_at).toLocaleTimeString()}`;
+      renderGrid(data.results);
+    } catch (e) {
+      console.error(e);
+      status.textContent = "Search error. See console.";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Utilities
+  function escapeHtml(s) {
+    return String(s || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // Default values
+  qEl.value = "BMW E30 Touring";
+  setEligible("now");
+
+  btn.addEventListener("click", runSearch);
+  qEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runSearch();
+  });
+
+  // First search on load
+  runSearch();
+};
