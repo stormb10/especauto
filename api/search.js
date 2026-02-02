@@ -127,10 +127,16 @@ export default async function handler(req, res) {
     if (!q) return res.status(400).json({ error: "Missing q" });
 
     // You can add/remove sources here anytime
-    const sourceQuery =
-      `site:mobile.de OR site:autoscout24 OR site:marktplaats.nl OR site:leboncoin.fr OR site:subito.it OR site:autotrader.co.uk`;
+   const sourceQuery =
+  `site:mobile.de OR site:autoscout24 OR site:marktplaats.nl OR site:leboncoin.fr OR site:subito.it OR site:autotrader.co.uk`;
 
-    const query = `${q} (${sourceQuery})`;
+// Force “individual listing” signals + exclude obvious directory/search pages
+const listingHints = `("€" OR "EUR" OR "km" OR "miles" OR "Baujahr" OR "jaar" OR "année" OR "immatriculation" OR "prezzo")`;
+const excludeDirs = `-suchen.mobile.de -/auto/bmw -/auto/`;
+
+// No parentheses (keep it simple for the search engine)
+const query = `${q} ${listingHints} ${sourceQuery} ${excludeDirs}`;
+
 
     const braveUrl = new URL("https://api.search.brave.com/res/v1/web/search");
     braveUrl.searchParams.set("q", query);
