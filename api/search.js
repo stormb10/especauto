@@ -126,16 +126,23 @@ export default async function handler(req, res) {
 
     if (!q) return res.status(400).json({ error: "Missing q" });
 
-    // You can add/remove sources here anytime
-   const sourceQuery =
+// --- Source + listing URL hints ---
+// We are specifically trying to pull *individual listing pages*.
+const sourceQuery =
   `site:mobile.de OR site:autoscout24 OR site:marktplaats.nl OR site:leboncoin.fr OR site:subito.it OR site:autotrader.co.uk`;
 
-// Force “individual listing” signals + exclude obvious directory/search pages
-const listingHints = `("€" OR "EUR" OR "km" OR "miles" OR "Baujahr" OR "jaar" OR "année" OR "immatriculation" OR "prezzo")`;
-const excludeDirs = `-suchen.mobile.de -/auto/bmw -/auto/`;
+// Listing page URL patterns / words that tend to appear on real ads
+const listingUrlHints = `("details.html?id=" OR "fahrzeuge/details" OR "Anzeige" OR "ad id" OR "ref:" OR "immatriculation" OR "kenteken")`;
 
-// No parentheses (keep it simple for the search engine)
-const query = `${q} ${listingHints} ${sourceQuery} ${excludeDirs}`;
+// Pricing/mileage hints also help avoid brand pages
+const listingValueHints = `("€" OR "EUR" OR "km" OR "miles")`;
+
+// Exclude known directory hosts/pages
+const excludeDirs = `-suchen.mobile.de -/marke/ -/modell/ -/auto/`;
+
+// Final query
+const query = `${q} ${listingUrlHints} ${listingValueHints} ${sourceQuery} ${excludeDirs}`;
+
 
 
     const braveUrl = new URL("https://api.search.brave.com/res/v1/web/search");
